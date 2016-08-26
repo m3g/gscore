@@ -32,6 +32,7 @@ endif
 BINARIES = $(BIN)/compactlog \
            $(BIN)/xcompactlog \
            $(BIN)/gscore \
+           $(BIN)/xgscore \
            $(BIN)/gcorrelation
 
 MODULES = types.o \
@@ -56,9 +57,9 @@ $(BIN)/compactlog : Makefile $(MODULES) compactlog.o \
                     $(FLAGS)
 
 $(BIN)/xcompactlog : Makefile $(MODULES) xcompactlog.o \
-                                        model_index.o \
-                                        sort.o \
-                                        progress_bar.o
+                                         model_index.o \
+                                         sort.o \
+                                         progress_bar.o
 	$(FORTRAN) -o $(BIN)/xcompactlog $(MODULES) \
                     xcompactlog.o \
                     model_index.o \
@@ -71,6 +72,15 @@ $(BIN)/gscore : Makefile $(MODULES) gscore.o \
                                     progress_bar.o
 	$(FORTRAN) -o $(BIN)/gscore $(MODULES) \
                     gscore.o \
+                    sort.o \
+                    progress_bar.o \
+                    $(FLAGS)
+
+$(BIN)/xgscore : Makefile $(MODULES) xgscore.o \
+                                     sort.o \
+                                     progress_bar.o
+	$(FORTRAN) -o $(BIN)/xgscore $(MODULES) \
+                    xgscore.o \
                     sort.o \
                     progress_bar.o \
                     $(FLAGS)
@@ -99,6 +109,9 @@ xcompactlog.o : Makefile xcompactlog.f90
 
 gscore.o : Makefile gscore.f90 
 	$(FORTRAN) -c gscore.f90 $(FLAGS)
+
+xgscore.o : Makefile xgscore.f90 
+	$(FORTRAN) -c xgscore.f90 $(FLAGS)
 
 gcorrelation.o : Makefile gcorrelation.f90 
 	$(FORTRAN) -c gcorrelation.f90 $(FLAGS)

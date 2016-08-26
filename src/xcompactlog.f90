@@ -231,18 +231,20 @@ program xcompactlog
 
   write(*,"(a)") "#"
   write(*,"(a)") "# Writing output files ... "
+  open(10,file=gdt_log,action='write',iostat=ioerr)
+  open(20,file=tm_log,action='write',iostat=ioerr)
 
   ! Write titles to compact log files
 
   write(10,*) ' This a compact lovoalign alignment file, with GDT scores '
   write(10,*) ' Alignment files obtained from ', trim(adjustl(align_list))
+  write(10,*) ' With PDB lists: ', trim(adjustl(pdb_list1)), trim(adjustl(pdb_list2))
   write(20,*) ' This a compact lovoalign alignment file, with TM-scores '
   write(20,*) ' Alignment files obtained from ', trim(adjustl(align_list))
+  write(20,*) ' With PDB lists: ', trim(adjustl(pdb_list1)), trim(adjustl(pdb_list2))
 
   ! Write list of models to output files
 
-  open(10,file=gdt_log,action='write',iostat=ioerr)
-  open(20,file=tm_log,action='write',iostat=ioerr)
   write(10,*) nmodels1
   write(20,*) nmodels1
   do imodel1 = 1, nmodels1
