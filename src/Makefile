@@ -30,7 +30,8 @@ endif
 ###################################################################
 
 BINARIES = $(BIN)/compactlog \
-           $(BIN)/gscore
+           $(BIN)/gscore \
+           $(BIN)/gcorrelation
 
 MODULES = types.o \
           file_operations.o
@@ -58,6 +59,16 @@ $(BIN)/gscore : Makefile $(MODULES) gscore.o \
                     progress_bar.o \
                     $(FLAGS)
 
+$(BIN)/gcorrelation : Makefile $(MODULES) gcorrelation.o \
+                                        model_index.o \
+                                        progress_bar.o
+	$(FORTRAN) -o $(BIN)/gcorrelation $(MODULES) \
+                    gcorrelation.o \
+                    model_index.o \
+                    progress_bar.o \
+                    $(FLAGS)
+
+
 #
 # Main program objects
 #
@@ -67,6 +78,9 @@ compactlog.o : Makefile compactlog.f90
 
 gscore.o : Makefile gscore.f90 
 	$(FORTRAN) -c gscore.f90 $(FLAGS)
+
+gcorrelation.o : Makefile gcorrelation.f90 
+	$(FORTRAN) -c gcorrelation.f90 $(FLAGS)
 
 #
 # Subroutine and function objects
