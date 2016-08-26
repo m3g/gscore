@@ -1,11 +1,11 @@
 !
-! PAS score calculator
+! Gscore calculator
 !
 ! Program compactlog
 !
 ! This program compacts the output of many multiple lovoalign
 ! runs into a single file with the data of GDT and TM-scores
-! for all pairs, so that the PAS scores can be computed faster
+! for all pairs, so that the G scores can be computed faster
 ! without having to read all the align logs again.
 !
 ! L. Martinez
@@ -64,7 +64,7 @@ program compactlog
   ! Print the input options
 
   write(*,"(a)") "#" 
-  write(*,"(a)") "# PAS score calculator " 
+  write(*,"(a)") "# Gscore calculator " 
   write(*,"(a)") "#" 
   write(*,"(a)") "# COMPACTLOG: Align log file conversion to compact form " 
   write(*,"(a)") "#" 
@@ -126,11 +126,12 @@ program compactlog
   do i = 1, nmodels-1
     call progress(i,1,nmodels)
     j = i + 1
-    do while( j > 1 .and. model(j-1)%name > model(j)%name )
+    do while( model(j-1)%name > model(j)%name )
       file1 = model(j-1)%name
       model(j-1)%name = model(j)%name
       model(j)%name = file1
       j = j - 1
+      if ( j == 1 ) exit
     end do
   end do
   call progress(nmodels,1,nmodels)

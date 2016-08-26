@@ -13,7 +13,7 @@ endif
 ifeq "$(COMPILER)" "GNU"
    MPIFORTRAN = mpif90
    FORTRAN = gfortran
-   FLAGS = -O3 -ffast-math
+   FLAGS = -O3
 endif
 
 # Directory for executables
@@ -29,7 +29,8 @@ endif
 #                                                                 #
 ###################################################################
 
-BINARIES = $(BIN)/compactlog 
+BINARIES = $(BIN)/compactlog \
+           $(BIN)/gscore
 
 MODULES = types.o \
           file_operations.o
@@ -50,12 +51,22 @@ $(BIN)/compactlog : Makefile $(MODULES) compactlog.o \
                     progress_bar.o \
                     $(FLAGS)
 
+$(BIN)/gscore : Makefile $(MODULES) gscore.o \
+                                    progress_bar.o
+	$(FORTRAN) -o $(BIN)/gscore $(MODULES) \
+                    gscore.o \
+                    progress_bar.o \
+                    $(FLAGS)
+
 #
 # Main program objects
 #
 
 compactlog.o : Makefile compactlog.f90 
 	$(FORTRAN) -c compactlog.f90 $(FLAGS)
+
+gscore.o : Makefile gscore.f90 
+	$(FORTRAN) -c gscore.f90 $(FLAGS)
 
 #
 # Subroutine and function objects
