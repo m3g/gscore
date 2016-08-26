@@ -226,6 +226,9 @@ program compactlog
   close(20)
 
   write(*,"(a)") "#"
+  write(*,"(a,a)") "# Wrote file: ", trim(adjustl(gdt_log))
+  write(*,"(a,a)") "# Wrote file: ", trim(adjustl(tm_log))
+  write(*,"(a)") "#"
   write(*,"(a)") '# Finished. '
 
 end program compactlog
