@@ -23,49 +23,50 @@ program compactlog
   integer :: narg, ioerr, nmodels, nlogs, ilog
   double precision :: dummy, tmscore_read, gdt_read
   double precision, allocatable :: gdt(:,:), tmscore(:,:)
-  character(len=200) :: align_list, firstlog, align_log, gdt_log, tm_log
+  character(len=200) :: pdb_list, align_list, align_log, gdt_log, tm_log
   character(len=200) :: record, file1, file2, format
   logical :: error
   type(model_type), allocatable :: model(:)
 
   narg = iargc()
-  if ( narg /= 3 ) then
-    write(*,*) ' ERROR: Run with: ./compactlog [align_list] [gdt output] [tmscore output]  '
+  if ( narg /= 4 ) then
+    write(*,*) ' ERROR: Run with: ./compactlog [pdb list] [align list] [gdt output] [tmscore output]  '
     stop
   end if
 
-  ! Open first log list
+  ! Read PDB file list from comand line
 
-  call getarg(1,align_list)
-  open(10,file=align_list,status='old',action='read',iostat=ioerr)
-  if ( ioerr /= 0 ) then
-    write(*,*) ' ERROR: Could not open file: ', trim(adjustl(align_list))
-    stop
-  end if
+  call getarg(1,pdb_list)
 
-  ! Read gdt and tmscore cutoffs
+  ! Read align log file list from command line
 
-  call getarg(2,gdt_log)
-  open(30,file=gdt_log,status='new',action='write',iostat=ioerr)
+  call getarg(2,align_list)
+
+  ! Read gdt and tmscore cutoffs, create files
+
+  call getarg(3,gdt_log)
+  open(10,file=gdt_log,status='new',action='write',iostat=ioerr)
   if ( ioerr /= 0 ) then
     write(*,*) ' ERROR: Trying to create file: ', trim(adjustl(gdt_log))
     write(*,*) '        but file already exists, or some other access problem. '
     stop
   end if
-  call getarg(3,tm_log)
-  open(40,file=tm_log,status='new',action='write',iostat=ioerr)
+  close(10)
+  call getarg(4,tm_log)
+  open(10,file=tm_log,status='new',action='write',iostat=ioerr)
   if ( ioerr /= 0 ) then
     write(*,*) ' ERROR: Trying to create file: ', trim(adjustl(tm_log))
     write(*,*) '        but file already exists, or some other access problem. '
     stop
   end if
+  close(10)
 
   ! Print the input options
 
   write(*,"(a)") "#" 
   write(*,"(a)") "# PAS score calculator " 
   write(*,"(a)") "#" 
-  write(*,"(a)") "# Align log file conversion " 
+  write(*,"(a)") "# COMPACTLOG: Align log file conversion to compact form " 
   write(*,"(a)") "#" 
   write(*,"(a)") "# L. Martinez - Institute of Chemistry, University of Campinas" 
   write(*,"(a)") "# http://leandro.iqm.unicamp.br" 
@@ -80,72 +81,51 @@ program compactlog
   write(*,"(a,a)") "# Will create compact log for TM-scores: ", trim(adjustl(tm_log))
   write(*,"(a)") "#" 
 
-  ! Write titles to compact log files
 
-  write(30,*) ' This a compact lovoalign alignment file, with GDT scores '
-  write(30,*) ' Alignment files obtained from ', trim(adjustl(align_list))
-  write(40,*) ' This a compact lovoalign alignment file, with TM-scores '
-  write(40,*) ' Alignment files obtained from ', trim(adjustl(align_list))
+  !
+  ! Count the number of models in the PDB list
+  !
 
-  ! Count the number of lovoalign log files and models
-
-  nlogs = 0
-  nmodels = 0
-  do
-    read(10,"(a200)",iostat=ioerr) align_log
-    if ( ioerr /= 0 ) exit
-    if ( comment(align_log) ) cycle 
-    nlogs = nlogs + 1
-    
-    ! Read number of alignments in this file (is the number of models
-    ! of the target model database)
-
-    if ( nlogs == 1 ) then
-      firstlog = align_log
-      open(20,file=align_log,action='read',status='old',iostat=ioerr)
-      if ( ioerr /= 0 ) then
-        write(*,*) ' ERROR: Could not open file: ', trim(adjustl(align_log))
-      end if
-      nmodels = 0
-      do
-        read(20,"(a200)",iostat=ioerr) record
-        if ( ioerr /= 0 ) exit
-        if ( comment(record) ) cycle
-        nmodels = nmodels + 1
-      end do
-      close(20)
-    end if
-  end do
-  write(*,"(a,i10)") '# Number of lovoalign log files in list: ', nlogs
-  write(*,"(a,i10)") '# Number of alignments in each log file: ', nmodels
-  write(*,"(a)") "#" 
-  if ( nlogs /= nmodels ) then
-    write(*,*) ' ERROR: The number of alignment log files is not the same as '
-    write(*,*) '        the number of models. This is not what is expected from '
-    write(*,*) '        an all-to-all alignment. '
+  open(10,file=pdb_list,status='old',action='read',iostat=ioerr)
+  if ( ioerr /= 0 ) then
+    write(*,*) ' ERROR: Could not open file: ', trim(adjustl(pdb_list))
     stop
   end if
+  nmodels = 0
+  do
+    read(10,"(a200)",iostat=ioerr) record
+    if ( ioerr /= 0 ) exit
+    if ( comment(record) ) cycle 
+    nmodels = nmodels + 1
+  end do
 
+  write(*,"(a)") '# Number of PDB files in list: ', nmodels
   allocate(gdt(nmodels,nmodels),tmscore(nmodels,nmodels),model(nmodels))
+  rewind(10)
 
   !
   ! Assign an index to each model name
   !
+
   write(*,"(a)") "# Assigning indexes for each model ... "
-  open(20,file=firstlog,action='read',status='old')
   imodel = 0
   do
-    read(20,"(a200)",iostat=ioerr) record
+    read(10,"(a200)",iostat=ioerr) record
     if ( ioerr /= 0 ) exit
     if ( comment(record) ) cycle
     read(record,*) file1
     imodel = imodel + 1
     model(imodel)%name = basename(file1)
   end do
+  close(10)
+
   !
   ! Sort model names according to string comparisons
   !
+
+  write(*,"(a)") "# Sorting models by file name ... "
   do i = 1, nmodels-1
+    call progress(i,1,nmodels)
     j = i + 1
     do while( j > 1 .and. model(j-1)%name > model(j)%name )
       file1 = model(j-1)%name
@@ -154,11 +134,24 @@ program compactlog
       j = j - 1
     end do
   end do
-  write(30,*) nmodels
-  write(40,*) nmodels
-  do imodel = 1, nmodels
-    write(30,*) imodel, trim(adjustl(model(imodel)%name))
+  
+  ! Count the number of lovoalign log files
+
+  open(10,file=align_list,status='old',action='read',iostat=ioerr)
+  if ( ioerr /= 0 ) then
+    write(*,*) ' ERROR: Could not open file: ', trim(adjustl(align_list))
+    stop
+  end if
+  nlogs = 0
+  do
+    read(10,"(a200)",iostat=ioerr) align_log
+    if ( ioerr /= 0 ) exit
+    if ( comment(align_log) ) cycle 
+    nlogs = nlogs + 1
   end do
+  rewind(10)
+  write(*,"(a,i10)") '# Number of lovoalign log files in list: ', nlogs
+  write(*,"(a)") "#" 
 
   !
   ! Now, reading all alignment log files and annotating the scores
@@ -166,10 +159,9 @@ program compactlog
   !
   write(*,"(a)") "#" 
   write(*,"(a)") "# Reading all alignment files ... this can take a while. "
-  rewind(10)
   ilog = 0
-  call progress(ilog,1,nlogs)
   do
+    call progress(ilog,1,nlogs)
     read(10,"(a200)",iostat=ioerr) align_log
     if ( ioerr /= 0 ) exit
     if ( comment(align_log) ) cycle
@@ -195,7 +187,7 @@ program compactlog
       file2 = basename(file2)
       i2 = model_index(file2,model,nmodels,error)
       if ( error ) cycle
-      if ( i1 > i2 ) then
+      if ( i2 > i1 ) then
         tmscore(i1,i2) = tmscore_read
         gdt(i1,i2) = gdt_read
       else
@@ -205,9 +197,26 @@ program compactlog
     end do
     close(20)
     ilog = ilog + 1
-    call progress(ilog,1,nlogs)
   end do
   close(10)
+
+  ! Create output files
+
+  open(10,file=gdt_log,action='write',iostat=ioerr)
+  open(20,file=tm_log,action='write',iostat=ioerr)
+  write(10,*) nmodels
+  write(20,*) nmodels
+  do imodel = 1, nmodels
+    write(10,*) imodel, trim(adjustl(model(imodel)%name))
+    write(20,*) imodel, trim(adjustl(model(imodel)%name))
+  end do
+
+  ! Write titles to compact log files
+
+  write(10,*) ' This a compact lovoalign alignment file, with GDT scores '
+  write(10,*) ' Alignment files obtained from ', trim(adjustl(align_list))
+  write(20,*) ' This a compact lovoalign alignment file, with TM-scores '
+  write(20,*) ' Alignment files obtained from ', trim(adjustl(align_list))
 
   !
   ! Write scores to files
@@ -216,11 +225,11 @@ program compactlog
   write(format,*) nmodels
   format = "("//trim(adjustl(format))//"(tr1,f8.3))"
   do imodel = 1, nmodels - 1
-    write(30,format) (gdt(imodel,i),i=imodel+1,nmodels)
-    write(40,format) (tmscore(imodel,i),i=imodel+1,nmodels)
+    write(10,format) (gdt(imodel,i),i=imodel+1,nmodels)
+    write(20,format) (tmscore(imodel,i),i=imodel+1,nmodels)
   end do
-  close(30)
-  close(40)
+  close(10)
+  close(20)
 
   write(*,"(a)") '# Finished. '
 
