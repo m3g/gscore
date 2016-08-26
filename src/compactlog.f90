@@ -99,7 +99,7 @@ program compactlog
     nmodels = nmodels + 1
   end do
 
-  write(*,"(a)") '# Number of PDB files in list: ', nmodels
+  write(*,"(a,i10)") '# Number of PDB files in list: ', nmodels
   allocate(gdt(nmodels,nmodels),tmscore(nmodels,nmodels),model(nmodels))
   rewind(10)
 
@@ -107,13 +107,12 @@ program compactlog
   ! Assign an index to each model name
   !
 
-  write(*,"(a)") "# Assigning indexes for each model ... "
+  write(*,"(a)") "# Reading list of model files ... "
   imodel = 0
   do
-    read(10,"(a200)",iostat=ioerr) record
+    read(10,"(a200)",iostat=ioerr) file1
     if ( ioerr /= 0 ) exit
-    if ( comment(record) ) cycle
-    read(record,*) file1
+    if ( comment(file1) ) cycle
     imodel = imodel + 1
     model(imodel)%name = basename(file1)
   end do
@@ -134,6 +133,7 @@ program compactlog
       j = j - 1
     end do
   end do
+  call progress(nmodels,1,nmodels)
   
   ! Count the number of lovoalign log files
 
@@ -157,7 +157,6 @@ program compactlog
   ! Now, reading all alignment log files and annotating the scores
   ! of the alignment of each pair
   !
-  write(*,"(a)") "#" 
   write(*,"(a)") "# Reading all alignment files ... this can take a while. "
   ilog = 0
   do
