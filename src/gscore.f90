@@ -22,7 +22,6 @@ program gscore
   double precision, allocatable :: scores(:,:)
   character(len=200) :: compactlog, record, output
   type(model_type), allocatable :: model(:)
-  type(model_type) :: modeltemp
 
   narg = iargc()
   if ( narg /= 3 ) then
@@ -102,19 +101,7 @@ program gscore
 
   ! Order models from greater to lower G-scores
 
-  write(*,"(a)") "# Sorting models by G-score ... "
-  do i = 1, nmodels-1
-    call progress(i,1,nmodels)
-    j = i + 1
-    do while( model(j-1)%gscore < model(j)%gscore )
-      modeltemp = model(j-1)
-      model(j-1) = model(j)
-      model(j) = modeltemp
-      j = j - 1
-      if ( j == 1 ) exit
-    end do
-  end do
-  call progress(nmodels,1,nmodels)
+  call sort_by_gscore(nmodels,model)
 
   !
   ! Write output file 

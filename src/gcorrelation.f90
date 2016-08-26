@@ -23,7 +23,6 @@ program gcorrelation
   character(len=200) :: compactlog, gscorefile, record, output, reference, name
   logical :: error
   type(model_type), allocatable :: model(:)
-  type(model_type) :: modeltemp
 
   narg = iargc()
   if ( narg /= 4 ) then
@@ -133,21 +132,11 @@ program gcorrelation
     end if
   end do
 
+  !
   ! Sort models from greater to lower similarity
+  !
 
-  write(*,"(a)") "# Sorting models by similarity to reference ... "
-  do i = 1, nmodels-1
-    call progress(i,1,nmodels)
-    j = i + 1
-    do while( model(j-1)%similarity < model(j)%similarity )
-      modeltemp = model(j-1)
-      model(j-1) = model(j)
-      model(j) = modeltemp
-      j = j - 1
-      if ( j == 1 ) exit
-    end do
-  end do
-  call progress(nmodels,1,nmodels)
+  call sort_by_similarity(nmodels,model)
 
   !
   ! Write output file 
