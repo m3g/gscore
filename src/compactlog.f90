@@ -17,14 +17,15 @@
 program compactlog
 
   use types
+  use file_operations
   implicit none
   integer :: i1, i2, i, j, model_index, imodel
   integer :: narg, ioerr, nmodels, nlogs, ilog
   double precision :: dummy, tmscore_read, gdt_read
   double precision, allocatable :: gdt(:,:), tmscore(:,:)
   character(len=200) :: align_list, firstlog, align_log, gdt_log, tm_log
-  character(len=200) :: basename, record, file1, file2, format
-  logical :: comment, error
+  character(len=200) :: record, file1, file2, format
+  logical :: error
   type(model_type), allocatable :: model(:)
 
   narg = iargc()
@@ -224,155 +225,6 @@ program compactlog
   write(*,"(a)") '# Finished. '
 
 end program compactlog
-
-!
-! Function that determines the index of a model from its name
-!
-
-function model_index(name,model,n,error)
- 
-  use types
-  implicit none
-  integer :: model_index, n, imax, imin, iavg
-  character(len=200) :: name
-  logical :: error
-  type(model_type) :: model(n)
-
-  imin = 1
-  imax = n
-  error = .false.
-  if ( name < model(1)%name ) error = .true.
-  if ( name > model(n)%name ) error = .true.
-  if ( .not. error ) then
-    do
-      if ( name == model(imin)%name ) then 
-        model_index = imin
-        return
-      end if
-      if ( name == model(imax)%name ) then
-        model_index = imax
-        return
-      end if
-      if ( imax == imin ) then
-        error = .true.
-        exit
-      end if
-      iavg = imin + ( imax - imin ) / 2
-      if ( name >= model(iavg)%name ) imin = iavg
-      if ( name <= model(iavg)%name ) imax = iavg
-    end do
-  end if
-  if ( error ) then
-    write(*,*) ' WARNING: A file is listed in a log file but was not found in list: '
-    write(*,*) '          File: ', trim(adjustl(name))
-  end if
-
-end function model_index
-
-!
-! Function that determines the basename of a file,
-! removing the path and the extension
-!
-
-function basename(filename)
-
-  integer :: i
-  character(len=200) :: filename, basename
-
-  basename = trim(adjustl(filename))
-  i = length(basename)
-  idot = i+1
-  do while(basename(i:i) /= "/")
-    if ( basename(i:i) == "." ) then
-      idot = i
-    end if
-    i = i - 1
-    if ( i == 0 ) exit
-  end do
-  i = i + 1
-  basename = basename(i:idot-1)
-  do i = idot, 200
-    basename(i:i) = achar(32)
-  end do
-
-end function basename
-
-!
-! Function that determines the length of a string
-!
-
-function length(string)
-
-  implicit none
-  integer :: length
-  character(len=200) :: string
-  logical :: empty_char
-  length = 200
-  do while( empty_char(string(length:length)) ) 
-    length = length - 1
-  end do
-
-end function length
-
-!
-! Function that determines if a character is empty
-!
-
-function empty_char(char)
-
-  implicit none
-  logical :: empty_char
-  character :: char
-  empty_char = .false.
-  if ( char == achar(9) .or. &
-       char == achar(32) .or. &
-       char == '' ) then
-    empty_char = .true.
-  end if 
-
-end function empty_char
-
-!
-! Function that checks if a line is a comment line
-!
-
-function comment(string)
-
-  implicit none
-  integer :: i
-  logical :: comment, empty_char
-  character(len=200) :: string
-  i = 1
-  do while( empty_char(string(i:i)) .and. i < 200 ) 
-    i = i + 1
-  end do
-  comment = .false.
-  if ( string(i:i) == "#" .or. i == 200 ) comment = .true.
-
-end function comment
-
-!
-! Subroutine that writes a beatiful progress bar
-!
-
-subroutine progress(current,start,end)
-
-  integer :: current, start, end
-
-  if ( current == start ) then
-    write(*,"('# Progress: ',i10,' of ', i10$)") start, end
-    return
-  end if
-  if ( current > start .and. current < end ) then
-    write(*,"(24a,$)") (achar(8),i=1,24)
-    write(*,"(i10,' of ',i10,$)") current, end
-  end if
-  if ( current == end ) then
-    write(*,"(24a,$)") (achar(8),i=1,24)
-    write(*,"(i10,' of ',i10)") current, end
-  end if
- 
-end subroutine progress
 
 
 
