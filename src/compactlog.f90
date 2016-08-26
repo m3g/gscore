@@ -82,7 +82,6 @@ program compactlog
   write(*,"(a,a)") "# Will create compact log for TM-scores: ", trim(adjustl(tm_log))
   write(*,"(a)") "#" 
 
-
   !
   ! Count the number of models in the PDB list
   !

@@ -157,6 +157,9 @@ program gcorrelation
   end do
   close(10)
 
+  write(*,"(a)") "#"
+  write(*,"(a,a)") "# Wrote file: ", trim(adjustl(output))
+  write(*,"(a)") "#"
   write(*,"(a)") "# Finished. " 
 
 end program gcorrelation
