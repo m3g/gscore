@@ -5,7 +5,7 @@
 !
 ! This program compacts the output of many multiple lovoalign
 ! runs into a single file with the data of GDT and TM-scores
-! for all pairs, so that the PAS scores can be compued faster
+! for all pairs, so that the PAS scores can be computed faster
 ! without having to read all the align logs again.
 !
 ! L. Martinez
@@ -201,6 +201,18 @@ program compactlog
 
   ! Create output files
 
+  write(*,"(a)") "#"
+  write(*,"(a)") "# Writing output files ... "
+
+  ! Write titles to compact log files
+
+  write(10,*) ' This a compact lovoalign alignment file, with GDT scores '
+  write(10,*) ' Alignment files obtained from ', trim(adjustl(align_list))
+  write(20,*) ' This a compact lovoalign alignment file, with TM-scores '
+  write(20,*) ' Alignment files obtained from ', trim(adjustl(align_list))
+
+  ! Write list of models to output files
+
   open(10,file=gdt_log,action='write',iostat=ioerr)
   open(20,file=tm_log,action='write',iostat=ioerr)
   write(10,*) nmodels
@@ -210,16 +222,7 @@ program compactlog
     write(20,*) imodel, trim(adjustl(model(imodel)%name))
   end do
 
-  ! Write titles to compact log files
-
-  write(10,*) ' This a compact lovoalign alignment file, with GDT scores '
-  write(10,*) ' Alignment files obtained from ', trim(adjustl(align_list))
-  write(20,*) ' This a compact lovoalign alignment file, with TM-scores '
-  write(20,*) ' Alignment files obtained from ', trim(adjustl(align_list))
-
-  !
   ! Write scores to files
-  !
 
   write(format,*) nmodels
   format = "("//trim(adjustl(format))//"(tr1,f8.3))"
@@ -230,6 +233,7 @@ program compactlog
   close(10)
   close(20)
 
+  write(*,"(a)") "#"
   write(*,"(a)") '# Finished. '
 
 end program compactlog
