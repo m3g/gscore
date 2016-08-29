@@ -195,6 +195,9 @@ program compactlog
 
   ! Write titles to compact log files
 
+  open(10,file=gdt_log,action='write',iostat=ioerr)
+  open(20,file=tm_log,action='write',iostat=ioerr)
+
   write(10,*) ' This a compact lovoalign alignment file, with GDT scores '
   write(10,*) ' Alignment files obtained from ', trim(adjustl(align_list)),&
               ' PDB list: ', trim(adjustl(pdb_list))
@@ -204,8 +207,6 @@ program compactlog
 
   ! Write list of models to output files
 
-  open(10,file=gdt_log,action='write',iostat=ioerr)
-  open(20,file=tm_log,action='write',iostat=ioerr)
   write(10,*) nmodels
   write(20,*) nmodels
   do imodel = 1, nmodels
