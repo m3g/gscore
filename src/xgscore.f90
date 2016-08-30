@@ -17,13 +17,12 @@ program xgscore
 
   use types
   use file_operations
+  use xcompactlog_data
   implicit none
   integer :: i, j 
-  integer :: narg, ioerr, nmodels1, nmodels2
+  integer :: narg, ioerr
   double precision :: scorecut
-  double precision, allocatable :: scores(:,:)
-  character(len=200) :: compactlog, record, output
-  type(model_type), allocatable :: model1(:), model2(:)
+  character(len=200) :: record, output
 
   narg = iargc()
   if ( narg /= 3 ) then
@@ -57,46 +56,9 @@ program xgscore
   write(*,"(a,f12.5)") "# Score similarity cutoff: ", scorecut
   write(*,"(a)") "#" 
 
-  ! Open the compact log file
+  ! Read the compact log file
 
-  open(10,file=compactlog,action='read',status='old',iostat=ioerr)
-  if ( ioerr /= 0 ) then
-    write(*,*) ' ERROR: Could not find or open alignment log file: ', trim(adjustl(compactlog))
-    stop
-  end if
-
-  ! Read model list from log file (first three lines are comments to be ignored)
-
-  read(10,*)
-  read(10,*)
-  read(10,*)
-
-  ! Number of models of first set
-  read(10,*) nmodels1
-  allocate(model1(nmodels1))
-
-  ! Read model1 names
-  do i = 1, nmodels1
-    read(10,*) model1(i)%index, model1(i)%name
-  end do
-
-  ! Number of models of second set
-  read(10,*) nmodels2
-  allocate(model2(nmodels2))
-
-  ! Read model2 names
-  do i = 1, nmodels2
-    read(10,*) model2(i)%index, model2(i)%name
-  end do
-
-  ! Reading scores
-  write(*,"(a)") "# Reading scores from file ... "
-  allocate(scores(nmodels1,nmodels2))
-  do i = 1, nmodels1
-    call progress(i,1,nmodels1)
-    read(10,*) (scores(i,j),j=1,nmodels2)
-  end do
-  close(10)
+  call read_xcompactlog(10)
 
   ! Compute G-score for all models of second list
 
@@ -129,6 +91,12 @@ program xgscore
   open(10,file=output,action='write')
   write(10,"(a)") "# Output of G-score"
   write(10,"(a,a)") "# Input alignment log: ", trim(adjustl(compactlog))
+  if ( score_type == 1 ) then
+    write(10,"(a)") "# Score type: GDT_TS"
+  end if
+  if ( score_type == 2 ) then
+    write(10,"(a)") "# Score type: TM-score"
+  end if
   write(10,"(a,f12.5)") "# Score cutoff: ", scorecut
   write(10,"(a)") "#"
   write(10,"(a)") "#    G-score  Model"

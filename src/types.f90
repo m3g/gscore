@@ -7,4 +7,4 @@ module types
     double precision :: similarity
   end type model_type
 
-end module types
+end module types 

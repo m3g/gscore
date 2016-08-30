@@ -15,13 +15,12 @@ program gscore
 
   use types
   use file_operations
+  use compactlog_data
   implicit none
   integer :: i, j 
-  integer :: narg, ioerr, nmodels
+  integer :: narg, ioerr
   double precision :: scorecut
-  double precision, allocatable :: scores(:,:)
-  character(len=200) :: compactlog, record, output
-  type(model_type), allocatable :: model(:)
+  character(len=200) :: record, output
 
   narg = iargc()
   if ( narg /= 3 ) then
@@ -54,33 +53,9 @@ program gscore
   write(*,"(a,f12.5)") "# Score similarity cutoff: ", scorecut
   write(*,"(a)") "#" 
 
-  ! Open the compact log file
+  ! Read compact log file
 
-  open(10,file=compactlog,action='read',status='old',iostat=ioerr)
-  if ( ioerr /= 0 ) then
-    write(*,*) ' ERROR: Could not find or open alignment log file: ', trim(adjustl(compactlog))
-    stop
-  end if
-
-  ! Read model list from log file (first two lines are comments to be ignored)
-
-  read(10,*)
-  read(10,*)
-  read(10,*) nmodels
-  allocate(scores(nmodels,nmodels),model(nmodels))
-
-  ! Read scores 
- 
-  write(*,"(a)") "# Reading scores from file ... "
-  do i = 1, nmodels
-    read(10,*) j, model(i)%name
-  end do
-  do i = 1, nmodels-1
-    call progress(i,1,nmodels)
-    read(10,*) (scores(i,j),j=i+1,nmodels)
-  end do
-  close(10)
-  call progress(nmodels,1,nmodels)
+  call read_compactlog(10)
 
   ! Compute G-score for all models
 
@@ -114,6 +89,12 @@ program gscore
   open(10,file=output,action='write')
   write(10,"(a)") "# Output of G-score"
   write(10,"(a,a)") "# Input alignment log: ", trim(adjustl(compactlog))
+  if ( score_type == 1 ) then
+    write(10,"(a)") "# Score type: GDT_TS"
+  end if
+  if ( score_type == 2 ) then
+    write(10,"(a)") "# Score type: TM-score"
+  end if
   write(10,"(a,f12.5)") "# Score cutoff: ", scorecut
   write(10,"(a)") "#"
   write(10,"(a)") "#    G-score  Model"

@@ -84,4 +84,46 @@ module file_operations
     
     end function comment
 
+    !
+    ! Subroutine that tests if file exists, and tries to open it.
+    ! Asks the user if he/she wants the file to be overwritten 
+    !
+
+    subroutine checkfile(file)
+    
+      implicit none
+      integer :: ioerr
+      character(len=200) :: file
+      character(len=1) :: char
+    
+      open(10,file=file,status='new',action='write',iostat=ioerr)
+      if ( ioerr /= 0 ) then
+        write(*,*) ' ERROR: Trying to create file: ', trim(adjustl(file)),' but file already exists '
+        write(*,"(a,$)") ' Overwrite it? (Y/N): '
+        read(*,*) char
+        if ( char == "Y" ) then
+          open(10,file=file,action='write',iostat=ioerr)
+          if ( ioerr /= 0 ) then
+            write(*,*) ' Could not open file. Quitting. '
+            stop
+          end if
+          close(10)
+        else
+          write(*,*) ' Quitting. '
+          stop
+        end if
+      end if
+      close(10)
+    
+    end subroutine checkfile
+
 end module file_operations
+
+
+
+
+
+
+
+
+

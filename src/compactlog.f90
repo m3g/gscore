@@ -4,7 +4,7 @@
 ! Program compactlog
 !
 ! This program compacts the output of many multiple lovoalign
-! runs into a single file with the data of GDT and TM-scores
+! runs into a single file with the data of GDT_TS and TM-scores
 ! for all pairs, so that the G scores can be computed faster
 ! without having to read all the align logs again.
 !
@@ -23,14 +23,14 @@ program compactlog
   integer :: narg, ioerr, nmodels, nlogs, ilog
   double precision :: dummy, tmscore_read, gdt_read
   double precision, allocatable :: gdt(:,:), tmscore(:,:)
-  character(len=200) :: pdb_list, align_list, align_log, gdt_log, tm_log
+  character(len=200) :: pdb_list, align_list, align_log, output, gdt_log, tm_log
   character(len=200) :: record, file1, file2, format
   logical :: error
   type(model_type), allocatable :: model(:)
 
   narg = iargc()
-  if ( narg /= 4 ) then
-    write(*,*) ' ERROR: Run with: ./compactlog [pdb list] [align list] [gdt output] [tmscore output]  '
+  if ( narg /= 3 ) then
+    write(*,*) ' ERROR: Run with: ./compactlog [pdb list] [align list] [output] [output]  '
     stop
   end if
 
@@ -42,24 +42,16 @@ program compactlog
 
   call getarg(2,align_list)
 
-  ! Read gdt and tmscore cutoffs, create files
+  ! Names of output files for GDT_TS and TM-score files.
 
-  call getarg(3,gdt_log)
-  open(10,file=gdt_log,status='new',action='write',iostat=ioerr)
-  if ( ioerr /= 0 ) then
-    write(*,*) ' ERROR: Trying to create file: ', trim(adjustl(gdt_log))
-    write(*,*) '        but file already exists, or some other access problem. '
-    stop
-  end if
-  close(10)
-  call getarg(4,tm_log)
-  open(10,file=tm_log,status='new',action='write',iostat=ioerr)
-  if ( ioerr /= 0 ) then
-    write(*,*) ' ERROR: Trying to create file: ', trim(adjustl(tm_log))
-    write(*,*) '        but file already exists, or some other access problem. '
-    stop
-  end if
-  close(10)
+  call getarg(3,output)
+  gdt_log = trim(adjustl(basename(output)))//"-GDT_TS"&
+            //trim(adjustl(output(length(basename(output))+1:length(output))))
+  tm_log = trim(adjustl(basename(output)))//"-TMscore"&
+           //trim(adjustl(output(length(basename(output))+1:length(output))))
+
+  call checkfile(gdt_log)
+  call checkfile(tm_log)
 
   ! Print the input options
 
@@ -78,8 +70,8 @@ program compactlog
   write(*,"(a,a)") "# List of PDB files: ", trim(adjustl(pdb_list)) 
   write(*,"(a,a)") "# List of alignment files: ", trim(adjustl(align_list)) 
   write(*,"(a)") "#" 
-  write(*,"(a,a)") "# Will create compact log for GDTs: ", trim(adjustl(gdt_log))
-  write(*,"(a,a)") "# Will create compact log for TM-scores: ", trim(adjustl(tm_log))
+  write(*,"(a,a)") "# Will create compact log for GDT_TS: ", trim(adjustl(gdt_log))
+  write(*,"(a,a)") "# Will create compact log for TM-score: ", trim(adjustl(tm_log))
   write(*,"(a)") "#" 
 
   !
@@ -199,11 +191,11 @@ program compactlog
   open(20,file=tm_log,action='write',iostat=ioerr)
 
   write(10,"(a)") '# This a compact lovoalign alignment file, with GDT_TS scores '
-  write(10,"(a,a)") '# Alignment files obtained from ', trim(adjustl(align_list)),&
-                    ' PDB list: ', trim(adjustl(pdb_list))
+  write(10,"(a,a)") '# Alignment files obtained from ', trim(adjustl(align_list))
+  write(10,"(a,a)") '# PDB list: ', trim(adjustl(pdb_list))
   write(20,"(a)") '# This a compact lovoalign alignment file, with TM-scores '
-  write(20,"(a,a)") '# Alignment files obtained from ', trim(adjustl(align_list)),&
-                    ' PDB list: ', trim(adjustl(pdb_list))
+  write(20,"(a,a)") '# Alignment files obtained from ', trim(adjustl(align_list))
+  write(20,"(a,a)") '# PDB list: ', trim(adjustl(pdb_list))
 
   ! Write list of models to output files
 
@@ -232,7 +224,4 @@ program compactlog
   write(*,"(a)") '# Finished. '
 
 end program compactlog
-
-
-
 

@@ -20,11 +20,10 @@ program xgcorrelation
   use file_operations
   implicit none
   integer :: i, i1, imodel
-  integer :: narg, ioerr, nmodels, model_index
+  integer :: narg, ioerr, nmodels, model_index, score_type
   double precision :: gscore, dummy, gdt_read, tmscore_read
-  double precision, allocatable :: gdt(:), tmscore(:)
   character(len=200) :: alignlog, gscorefile, record, name
-  character(len=200) :: gdt_output, tm_output, file1, file2, pdblist
+  character(len=200) :: output, file1, file2, pdblist
   logical :: error
   type(model_type), allocatable :: model(:)
 
@@ -33,18 +32,10 @@ program xgcorrelation
     write(*,*) ' ERROR: Run with: ./gcorrelation [reference align log] [pdb list] [gscore output] [output]'
     stop
   end if
-!voltar:
-!
-! Needs that gscore and xgscore inform on header which kind of similarity was used (GDT or TM-score)
-! Then, this program will read that from that file and use gdt or tmscore accordingly.
-! In this case, there is no need for gdt(:) and tmscore(:), just read the model%similarity
-! on the correct column
-!
   call getarg(1,alignlog)
-  call getarg(2,gscorefile)
-  call getarg(3,pdblist)
-  call getarg(4,gdt_output)
-  call getarg(5,tm_output)
+  call getarg(2,pdblist)
+  call getarg(3,gscorefile)
+  call getarg(4,output)
 
   ! Print the input options
 
@@ -60,8 +51,7 @@ program xgcorrelation
   write(*,"(a)") "#" 
   write(*,"(a,a)") "# Log of alignment to reference: ", trim(adjustl(alignlog)) 
   write(*,"(a,a)") "# G-score data file: ", trim(adjustl(gscorefile)) 
-  write(*,"(a,a)") "# Output file for GDT scores: ", trim(adjustl(gdt_output)) 
-  write(*,"(a,a)") "# Output file for TM-scores: ", trim(adjustl(tm_output)) 
+  write(*,"(a,a)") "# Output file: ", trim(adjustl(output)) 
   write(*,"(a)") "#" 
 
   !
@@ -82,7 +72,7 @@ program xgcorrelation
   end do
 
   write(*,"(a,i10)") '# Number of PDB files in list: ', nmodels
-  allocate(gdt(nmodels),tmscore(nmodels),model(nmodels))
+  allocate(model(nmodels))
   rewind(10)
 
   !
@@ -97,6 +87,45 @@ program xgcorrelation
     if ( comment(file1) ) cycle
     imodel = imodel + 1
     model(imodel)%name = basename(file1)
+  end do
+  close(10)
+
+  ! Open the gscore output and read the scores
+
+  write(*,"(a)") "# Reading G-scores from file ... "
+  open(10,file=gscorefile,status='old',action='read',iostat=ioerr) 
+  if ( ioerr /= 0 ) then
+    write(*,*) ' ERROR: Could not find or open G-scores file: ', trim(adjustl(gscorefile))
+    stop
+  end if
+  i = 0
+  do 
+    read(10,"(a200)",iostat=ioerr) record
+    if ( ioerr /= 0 ) exit
+    if ( index(record,"GDT_TS") /= 0 ) then
+      write(*,"(a)") '# G-scores computed from GDT_TS similarities.'
+      score_type = 1
+    end if
+    if ( index(record,"TM-score") /= 0 ) then
+      write(*,"(a)") '# G-scores computed from TM-score similarities.'
+      score_type = 2
+    end if
+    if ( comment(record) ) cycle
+    i = i + 1
+    call progress(i,1,nmodels)
+    read(record,*,iostat=ioerr) gscore, name
+    if ( ioerr /= 0 ) then
+      write(*,*) ' ERROR: Could not read gscore and model name from line: '
+      write(*,*) '       ', trim(adjustl(record))
+      stop
+    end if
+    imodel = model_index(name,model,nmodels,error)
+    if ( error ) then
+      write(*,*) ' ERROR: Model listed in G-score file is not in align log file. '
+      write(*,*) '        Model name: ', trim(adjustl(name))
+      stop
+    end if
+    model(imodel)%gscore = gscore
   end do
   close(10)
 
@@ -129,39 +158,12 @@ program xgcorrelation
     file1 = basename(file1)
     i1 = model_index(file1,model,nmodels,error)
     if ( error ) cycle
-    tmscore(i1) = tmscore_read
-    gdt(i1) = gdt_read
-  end do
-  close(10)
-
-  ! Open the gscore output and read the scores
-
-  write(*,"(a)") "# Reading G-scores from file ... "
-  open(10,file=gscorefile,status='old',action='read') 
-  if ( ioerr /= 0 ) then
-    write(*,*) ' ERROR: Could not find or open G-scores file: ', trim(adjustl(gscorefile))
-    stop
-  end if
-  i = 0
-  do 
-    read(10,"(a200)",iostat=ioerr) record
-    if ( ioerr /= 0 ) exit
-    if ( comment(record) ) cycle
-    i = i + 1
-    call progress(i,1,nmodels)
-    read(record,*,iostat=ioerr) gscore, name
-    if ( ioerr /= 0 ) then
-      write(*,*) ' ERROR: Could not read gscore and model name from line: '
-      write(*,*) '       ', trim(adjustl(record))
-      stop
+    if ( score_type == 1 ) then
+      model(i1)%similarity = gdt_read
     end if
-    imodel = model_index(name,model,nmodels,error)
-    if ( error ) then
-      write(*,*) ' ERROR: Model listed in G-score file is not in align log file. '
-      write(*,*) '        Model name: ', trim(adjustl(name))
-      stop
+    if ( score_type == 2 ) then
+      model(i1)%similarity = tmscore_read
     end if
-    model(imodel)%gscore = gscore
   end do
   close(10)
 
@@ -169,19 +171,23 @@ program xgcorrelation
   ! Sort models from greater to lower GDT
   !
 
-  do i = 1, nmodels
-    model(i)%similarity = gdt(i)
-  end do
   call sort_by_similarity(nmodels,model)
   
   ! Write GDT output file
 
   write(*,"(a)") "# Writing GDT output file ... "
-  open(10,file=gdt_output,action='write')
-  write(10,"(a)") "# Output of xgcorrelation (GDT scores)"
+  open(10,file=output,action='write')
+  write(10,"(a)") "# Output of xgcorrelation"
   write(10,"(a,a)") "# Input alignment log: ", trim(adjustl(alignlog))
   write(10,"(a,a)") "# Input gscore file: ", trim(adjustl(gscorefile))
   write(10,"(a,a)") "# List of PDB models: ", trim(adjustl(pdblist))
+  write(10,"(a)") "#"
+  if ( score_type == 1 ) then
+    write(10,"(a)") "# Similarity score: GDT_TS"
+  end if
+  if ( score_type == 2 ) then
+    write(10,"(a)") "# Similarity score: TM-score"
+  end if
   write(10,"(a)") "#"
   write(10,"(a)") "#    G-score    Similarity  Model"
   do i = 1, nmodels
@@ -190,36 +196,7 @@ program xgcorrelation
   end do
   close(10)
   write(*,"(a)") "#"
-  write(*,"(a,a)") "# Wrote file: ", trim(adjustl(gdt_output))
-  write(*,"(a)") "#"
-
-  !
-  ! Sort models from greater to lower TM-score
-  !
-
-  do i = 1, nmodels
-    model(i)%similarity = tmscore(i)
-  end do
-  call sort_by_similarity(nmodels,model)
-  
-  ! Write TM-score output file
-
-  write(*,"(a)") "# Writing TM-score output file ... "
-  open(10,file=tm_output,action='write')
-  write(10,"(a)") "# Output of xgcorrelation (TM-scores)"
-  write(10,"(a,a)") "# Input alignment log: ", trim(adjustl(alignlog))
-  write(10,"(a,a)") "# Input gscore file: ", trim(adjustl(gscorefile))
-  write(10,"(a,a)") "# List of PDB models: ", trim(adjustl(pdblist))
-  write(10,"(a)") "#"
-  write(10,"(a)") "#    G-score    Similarity  Model"
-  do i = 1, nmodels
-    write(10,"(f12.5,tr2,f12.5,tr2,a)") model(i)%gscore, model(i)%similarity, &
-                                        trim(adjustl(model(i)%name))
-  end do
-  close(10)
-
-  write(*,"(a)") "#"
-  write(*,"(a,a)") "# Wrote file: ", trim(adjustl(tm_output))
+  write(*,"(a,a)") "# Wrote file: ", trim(adjustl(output))
   write(*,"(a)") "#"
   write(*,"(a)") "# Finished. " 
 

@@ -15,18 +15,17 @@ program gcorrelation
 
   use types
   use file_operations
+  use compactlog_data
   implicit none
-  integer :: i, j, iref, imodel
-  integer :: narg, ioerr, nmodels, model_index
+  integer :: i, iref, imodel
+  integer :: narg, ioerr, model_index
   double precision :: gscore
-  double precision, allocatable :: scores(:,:)
-  character(len=200) :: compactlog, gscorefile, record, output, reference, name
+  character(len=200) :: gscorefile, record, output, reference, name
   logical :: error
-  type(model_type), allocatable :: model(:)
 
   narg = iargc()
   if ( narg /= 4 ) then
-    write(*,*) ' ERROR: Run with: ./gcorrelation [reference] [compact align log] [gscore output] [output file]'
+    write(*,*) ' ERROR: Run with: ./gcorrelation [reference] [compact align log] [gscore output] [output]'
     stop
   end if
   call getarg(1,reference)
@@ -52,47 +51,14 @@ program gcorrelation
   write(*,"(a,a)") "# Output file: ", trim(adjustl(output)) 
   write(*,"(a)") "#" 
 
-  ! Open the compact log file
+  ! Read model list from log file
 
-  open(10,file=compactlog,action='read',status='old',iostat=ioerr)
-  if ( ioerr /= 0 ) then
-    write(*,*) ' ERROR: Could not find or open alignment log file: ', trim(adjustl(compactlog))
-    stop
-  end if
+  call read_compactlog(10)
 
-  ! Read model list from log file (first two lines are comments to be ignored)
-
-  read(10,*)
-  read(10,*)
-  read(10,*) nmodels
-  allocate(scores(nmodels,nmodels),model(nmodels))
-
-  ! Read scores and find index of reference model
- 
-  write(*,"(a)") "# Reading similarity scores from file ... "
-  do i = 1, nmodels
-    read(10,*,iostat=ioerr) model(i)%index, model(i)%name
-    if ( ioerr /= 0 ) then
-      write(*,*) ' ERROR: Problem reading model list from align log. '
-      stop
-    end if
-    if ( reference == model(i)%name ) iref = i
-  end do
-  do i = 1, nmodels-1
-    call progress(i,1,nmodels)
-    read(10,*,iostat=ioerr) (scores(i,j),j=i+1,nmodels)
-    if ( ioerr /= 0 ) then
-      write(*,*) ' ERROR: Problem reading alignment scores from log. '
-      stop
-    end if
-  end do
-  close(10)
-  call progress(nmodels,1,nmodels)
-
-  ! Compute G-score for all models
+  ! Read G-score for all models
 
   write(*,"(a)") "# Reading G-scores from file ... "
-  open(10,file=gscorefile,status='old',action='read') 
+  open(10,file=gscorefile,status='old',action='read',iostat=ioerr) 
   if ( ioerr /= 0 ) then
     write(*,*) ' ERROR: Could not find or open G-scores file: ', trim(adjustl(gscorefile))
     stop
@@ -119,6 +85,11 @@ program gcorrelation
     model(imodel)%gscore = gscore
   end do
   close(10)
+
+  ! Checking which is the index of the reference model 
+  do i = 1, nmodels
+    if ( reference == model(i)%name ) iref = i
+  end do
 
   ! Now check the similarity of each model to the reference model
   
@@ -151,7 +122,7 @@ program gcorrelation
   write(10,"(a)") "#"
   write(10,"(a)") "#    G-score    Similarity  Model"
   do i = 1, nmodels
-    if ( model(i)%index == iref ) cycle
+    if ( model(i)%name == reference) cycle
     write(10,"(f12.5,tr2,f12.5,tr2,a)") model(i)%gscore, model(i)%similarity, &
                                         trim(adjustl(model(i)%name))
   end do
@@ -163,4 +134,5 @@ program gcorrelation
   write(*,"(a)") "# Finished. " 
 
 end program gcorrelation
+
 

@@ -23,14 +23,14 @@ program xcompactlog
   double precision :: dummy, tmscore_read, gdt_read
   double precision, allocatable :: gdt(:,:), tmscore(:,:)
   character(len=200) :: pdb_list1, pdb_list2
-  character(len=200) :: align_list, align_log, gdt_log, tm_log
+  character(len=200) :: align_list, align_log, gdt_log, tm_log, output
   character(len=200) :: record, file1, file2, format
   logical :: error
   type(model_type), allocatable :: model1(:), model2(:)
 
   narg = iargc()
-  if ( narg /= 5 ) then
-    write(*,*) ' ERROR: Run with: ./xcompactlog [pdb list 1] [pdb list 2] [align list] [gdt output] [tmscore output]  '
+  if ( narg /= 4 ) then
+    write(*,*) ' ERROR: Run with: ./xcompactlog [pdb list 1] [pdb list 2] [align list] [output]  '
     stop
   end if
 
@@ -43,24 +43,16 @@ program xcompactlog
 
   call getarg(3,align_list)
 
-  ! Read gdt and tmscore cutoffs, create files
+  ! Names of output files for GDT_TS and TM-score files.
 
-  call getarg(4,gdt_log)
-  open(10,file=gdt_log,status='new',action='write',iostat=ioerr)
-  if ( ioerr /= 0 ) then
-    write(*,*) ' ERROR: Trying to create file: ', trim(adjustl(gdt_log))
-    write(*,*) '        but file already exists, or some other access problem. '
-    stop
-  end if
-  close(10)
-  call getarg(5,tm_log)
-  open(10,file=tm_log,status='new',action='write',iostat=ioerr)
-  if ( ioerr /= 0 ) then
-    write(*,*) ' ERROR: Trying to create file: ', trim(adjustl(tm_log))
-    write(*,*) '        but file already exists, or some other access problem. '
-    stop
-  end if
-  close(10)
+  call getarg(4,output)
+  gdt_log = trim(adjustl(basename(output)))//"-GDT_TS"&
+            //trim(adjustl(output(length(basename(output))+1:length(output))))
+  tm_log = trim(adjustl(basename(output)))//"-TMscore"&
+           //trim(adjustl(output(length(basename(output))+1:length(output))))
+
+  call checkfile(gdt_log)
+  call checkfile(tm_log)
 
   ! Print the input options
 
@@ -81,8 +73,8 @@ program xcompactlog
   write(*,"(a,a)") "# Second list of model PDB files: ", trim(adjustl(pdb_list2)) 
   write(*,"(a,a)") "# List of alignment files: ", trim(adjustl(align_list)) 
   write(*,"(a)") "#" 
-  write(*,"(a,a)") "# Will create compact log for GDTs: ", trim(adjustl(gdt_log))
-  write(*,"(a,a)") "# Will create compact log for TM-scores: ", trim(adjustl(tm_log))
+  write(*,"(a,a)") "# Will create compact log for GDT_TS: ", trim(adjustl(gdt_log))
+  write(*,"(a,a)") "# Will create compact log for TM-score: ", trim(adjustl(tm_log))
   write(*,"(a)") "#" 
 
   !
@@ -102,7 +94,7 @@ program xcompactlog
     nmodels1 = nmodels1 + 1
   end do
 
-  write(*,"(a,i10)") '# Number of PDB files in model list: ', nmodels1
+  write(*,"(a,i10)") '# Number of PDB files in first list: ', nmodels1
   allocate(model1(nmodels1))
   rewind(10)
 
@@ -237,7 +229,7 @@ program xcompactlog
   open(10,file=gdt_log,action='write',iostat=ioerr)
   open(20,file=tm_log,action='write',iostat=ioerr)
 
-  write(10,"(a)") '# This a compact lovoalign alignment file, with GDT scores '
+  write(10,"(a)") '# This a compact lovoalign alignment file, with GDT_TS scores '
   write(10,"(a,a)") '# Alignment files obtained from ', trim(adjustl(align_list))
   write(10,"(a,2(tr1,a))") '# With PDB lists: ', trim(adjustl(pdb_list1)), trim(adjustl(pdb_list2))
   write(20,"(a)") ' This a compact lovoalign alignment file, with TM-scores '
