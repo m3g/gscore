@@ -50,6 +50,7 @@ program xgcorrelation
   write(*,"(a)") "# A model evaluation score for ... 2016" 
   write(*,"(a)") "#" 
   write(*,"(a,a)") "# Log of alignment to reference: ", trim(adjustl(alignlog)) 
+  write(*,"(a,a)") "# Target PDB file list: ", trim(adjustl(pdblist)) 
   write(*,"(a,a)") "# G-score data file: ", trim(adjustl(gscorefile)) 
   write(*,"(a,a)") "# Output file: ", trim(adjustl(output)) 
   write(*,"(a)") "#" 
@@ -90,6 +91,12 @@ program xgcorrelation
   end do
   close(10)
 
+  !
+  ! Sort model names according to string comparisons
+  !
+
+  call sort_by_name(nmodels,model)
+
   ! Open the gscore output and read the scores
 
   write(*,"(a)") "# Reading G-scores from file ... "
@@ -102,17 +109,18 @@ program xgcorrelation
   do 
     read(10,"(a200)",iostat=ioerr) record
     if ( ioerr /= 0 ) exit
-    if ( index(record,"GDT_TS") /= 0 ) then
-      write(*,"(a)") '# G-scores computed from GDT_TS similarities.'
-      score_type = 1
-    end if
-    if ( index(record,"TM-score") /= 0 ) then
-      write(*,"(a)") '# G-scores computed from TM-score similarities.'
-      score_type = 2
+    if ( index(record,"Score type:") /= 0 ) then
+      if ( index(record,"GDT_TS") /= 0 ) then
+        write(*,"(a)") '# G-scores computed from GDT_TS similarities.'
+        score_type = 1
+      end if
+      if ( index(record,"TM-score") /= 0 ) then
+        write(*,"(a)") '# G-scores computed from TM-score similarities.'
+        score_type = 2
+      end if
     end if
     if ( comment(record) ) cycle
     i = i + 1
-    call progress(i,1,nmodels)
     read(record,*,iostat=ioerr) gscore, name
     if ( ioerr /= 0 ) then
       write(*,*) ' ERROR: Could not read gscore and model name from line: '
@@ -129,14 +137,9 @@ program xgcorrelation
   end do
   close(10)
 
-  !
-  ! Sort model names according to string comparisons
-  !
-
-  call sort_by_name(nmodels,model)
-
   ! Open the align log file
 
+  write(*,"(a)") '# Reading alignment log file ... '
   open(10,file=alignlog,action='read',status='old',iostat=ioerr)
   if ( ioerr /= 0 ) then
     write(*,*) ' ERROR: Could not find or open alignment log file: ', trim(adjustl(alignlog))
@@ -149,7 +152,6 @@ program xgcorrelation
     if ( comment(record) ) cycle
     read(record,*,iostat=ioerr) file1, file2, tmscore_read, (dummy,i=1,4), gdt_read
     i = i + 1
-    call progress(i,1,nmodels)
     if ( ioerr /= 0 ) then
       write(*,*) ' ERROR: Could not read data in alignment log file: ', trim(adjustl(alignlog))
       write(*,*) '        Content: ', trim(adjustl(record))

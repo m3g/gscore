@@ -31,13 +31,15 @@ function model_index(name,model,n,error)
         exit
       end if
       iavg = imin + ( imax - imin ) / 2
-      if ( name >= model(iavg)%name ) imin = iavg
+      if ( name >= model(iavg)%name ) imin = iavg + 1
       if ( name <= model(iavg)%name ) imax = iavg
     end do
   end if
   if ( error ) then
-    write(*,*) ' WARNING: A file is listed in a log file but was not found in list: '
-    write(*,*) '          File: ', trim(adjustl(name))
+    write(*,*)
+    write(*,*) ' ERROR: A model is listed in a log file but was not found in list: '
+    write(*,*) '        Model: ', trim(adjustl(name))
+    stop
   end if
 
 end function model_index
