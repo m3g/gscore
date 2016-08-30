@@ -99,7 +99,7 @@ module file_operations
       open(10,file=file,status='new',action='write',iostat=ioerr)
       if ( ioerr /= 0 ) then
         write(*,*) ' ERROR: Trying to create file: ', trim(adjustl(file)),' but file already exists '
-        write(*,"(a,$)") ' Overwrite it? (Y/N): '
+        write(*,"(a,$)") '  Overwrite it? (Y/N): '
         read(*,*) char
         if ( char == "Y" ) then
           open(10,file=file,action='write',iostat=ioerr)
