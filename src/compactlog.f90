@@ -190,12 +190,14 @@ program compactlog
   open(10,file=gdt_log,action='write',iostat=ioerr)
   open(20,file=tm_log,action='write',iostat=ioerr)
 
-  write(10,"(a)") '# This a compact lovoalign alignment file, with GDT_TS scores '
+  write(10,"(a)") '# This a compact lovoalign alignment file'
   write(10,"(a,a)") '# Alignment files obtained from ', trim(adjustl(align_list))
   write(10,"(a,a)") '# PDB list: ', trim(adjustl(pdb_list))
-  write(20,"(a)") '# This a compact lovoalign alignment file, with TM-scores '
+  write(10,"(a,a)") '# Score type: GDT_TS'
+  write(20,"(a)") '# This a compact lovoalign alignment file'
   write(20,"(a,a)") '# Alignment files obtained from ', trim(adjustl(align_list))
   write(20,"(a,a)") '# PDB list: ', trim(adjustl(pdb_list))
+  write(10,"(a,a)") '# Score type: TM-score'
 
   ! Write list of models to output files
 
