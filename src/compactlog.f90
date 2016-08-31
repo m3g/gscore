@@ -30,7 +30,7 @@ program compactlog
 
   narg = iargc()
   if ( narg /= 3 ) then
-    write(*,*) ' ERROR: Run with: ./compactlog [pdb list] [align list] [output] [output]  '
+    write(*,*) ' ERROR: Run with: ./compactlog [pdb list] [align list] [output] '
     stop
   end if
 
