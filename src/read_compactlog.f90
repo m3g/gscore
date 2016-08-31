@@ -24,11 +24,16 @@ subroutine read_compactlog(unit)
 
   ! Read model list from log file 
 
+  write(*,"(a)") "# Reading scores from compactlog file ... "
+
   read(unit,"(a200)",iostat=ioerr) record
   if ( ioerr /= 0 ) then
     write(*,*) ' ERROR: Could not read data from file: ', trim(adjustl(compactlog))
     stop
   end if
+  read(unit,*) ! Ignore line
+  read(unit,*) ! Ignore line
+  read(unit,"(a200)") record
   if ( index(record,"Score type:") /= 0 ) then
     if ( index(record,"GDT_TS") /= 0 ) then
       write(*,"(a)") '# File contains GDT_TS score information. '
@@ -39,14 +44,11 @@ subroutine read_compactlog(unit)
       score_type = 2
     end if
   end if
-  read(unit,*) ! Ignore line
-  read(unit,*) ! Ignore line
   read(unit,*) nmodels
   allocate(scores(nmodels,nmodels),model(nmodels))
 
   ! Read scores 
  
-  write(*,"(a)") "# Reading scores from file ... "
   do i = 1, nmodels
     read(unit,*) j, model(i)%name
   end do

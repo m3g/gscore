@@ -197,7 +197,7 @@ program compactlog
   write(20,"(a)") '# This a compact lovoalign alignment file'
   write(20,"(a,a)") '# Alignment files obtained from ', trim(adjustl(align_list))
   write(20,"(a,a)") '# PDB list: ', trim(adjustl(pdb_list))
-  write(10,"(a,a)") '# Score type: TM-score'
+  write(20,"(a,a)") '# Score type: TM-score'
 
   ! Write list of models to output files
 
