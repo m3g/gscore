@@ -189,7 +189,7 @@ clean :
 	rm -f ./*.o ./*.mod
 
 cleanall : 
-	rm -f ./*.o ./*.mod $(BIN)/*
+	rm -f ./*.o ./*.mod $(BINARIES)
 
 
 
