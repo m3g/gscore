@@ -12,5 +12,5 @@ for model in `cat $pdblist`; do
   log=$logdir/$name.log
   wait_for.tcl $username lovoalign $nprocs 0.1
   echo "Running $name"
-  lovoalign -pdblist $pdblist -seqfix -skip > $log &
+  lovoalign -p1 $model -pdblist $pdblist -seqfix -skip -nglobal 1 > $log &
 done
