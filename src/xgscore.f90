@@ -24,6 +24,19 @@ program xgscore
   double precision :: scorecut
   character(len=200) :: record, output
 
+  write(*,"(a)") "#" 
+  write(*,"(a)") "# G-score calculator " 
+  call title()
+  write(*,"(a)") "# XGscore: Compute gscore of a set of models relative to another set." 
+  write(*,"(a)") "#" 
+  write(*,"(a)") "# L. Martinez - Institute of Chemistry, University of Campinas" 
+  write(*,"(a)") "# http://leandro.iqm.unicamp.br" 
+  write(*,"(a)") "#" 
+  write(*,"(a)") "# Reference:" 
+  write(*,"(a)") "# L. Martinez, A. Ferrari, F. C. Gozzo," 
+  write(*,"(a)") "# A model evaluation score for ... 2016" 
+  write(*,"(a)") "#" 
+
   narg = iargc()
   if ( narg /= 3 ) then
     write(*,*) ' ERROR: Run with: ./xgscore [compact align log] [score cut] [output file]'
@@ -40,17 +53,6 @@ program xgscore
 
   ! Print the input options
 
-  write(*,"(a)") "#" 
-  write(*,"(a)") "# G-score calculator " 
-  write(*,"(a)") "# XGscore: Compute gscore of a set of models relative to another set." 
-  write(*,"(a)") "#" 
-  write(*,"(a)") "# L. Martinez - Institute of Chemistry, University of Campinas" 
-  write(*,"(a)") "# http://leandro.iqm.unicamp.br" 
-  write(*,"(a)") "#" 
-  write(*,"(a)") "# Reference:" 
-  write(*,"(a)") "# L. Martinez, A. Ferrari, F. C. Gozzo," 
-  write(*,"(a)") "# A model evaluation score for ... 2016" 
-  write(*,"(a)") "#" 
   write(*,"(a,a)") "# Alignment log file (compact form): ", trim(adjustl(compactlog)) 
   write(*,"(a)") "#" 
   write(*,"(a,f12.5)") "# Score similarity cutoff: ", scorecut

@@ -28,6 +28,19 @@ program compactlog
   logical :: error
   type(model_type), allocatable :: model(:)
 
+  write(*,"(a)") "#" 
+  write(*,"(a)") "# G-score calculator " 
+  call title()
+  write(*,"(a)") "# COMPACTLOG: Align log file conversion to compact form " 
+  write(*,"(a)") "#" 
+  write(*,"(a)") "# L. Martinez - Institute of Chemistry, University of Campinas" 
+  write(*,"(a)") "# http://leandro.iqm.unicamp.br" 
+  write(*,"(a)") "#" 
+  write(*,"(a)") "# Reference:" 
+  write(*,"(a)") "# L. Martinez, A. Ferrari, F. C. Gozzo," 
+  write(*,"(a)") "# A model evaluation score for ... 2016" 
+  write(*,"(a)") "#" 
+
   narg = iargc()
   if ( narg /= 3 ) then
     write(*,*) ' ERROR: Run with: ./compactlog [pdb list] [align list] [output] '
@@ -55,18 +68,6 @@ program compactlog
 
   ! Print the input options
 
-  write(*,"(a)") "#" 
-  write(*,"(a)") "# G-score calculator " 
-  write(*,"(a)") "#" 
-  write(*,"(a)") "# COMPACTLOG: Align log file conversion to compact form " 
-  write(*,"(a)") "#" 
-  write(*,"(a)") "# L. Martinez - Institute of Chemistry, University of Campinas" 
-  write(*,"(a)") "# http://leandro.iqm.unicamp.br" 
-  write(*,"(a)") "#" 
-  write(*,"(a)") "# Reference:" 
-  write(*,"(a)") "# L. Martinez, A. Ferrari, F. C. Gozzo," 
-  write(*,"(a)") "# A model evaluation score for ... 2016" 
-  write(*,"(a)") "#" 
   write(*,"(a,a)") "# List of PDB files: ", trim(adjustl(pdb_list)) 
   write(*,"(a,a)") "# List of alignment files: ", trim(adjustl(align_list)) 
   write(*,"(a)") "#" 

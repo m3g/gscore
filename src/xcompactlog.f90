@@ -28,6 +28,20 @@ program xcompactlog
   logical :: error
   type(model_type), allocatable :: model1(:), model2(:)
 
+  write(*,"(a)") "#" 
+  write(*,"(a)") "# G-score calculator " 
+  call title()
+  write(*,"(a)") "# XCOMPACTLOG: Align log file conversion to compact form, from " 
+  write(*,"(a)") "#              alignments of disjoint sets of structures. "
+  write(*,"(a)") "#" 
+  write(*,"(a)") "# L. Martinez - Institute of Chemistry, University of Campinas" 
+  write(*,"(a)") "# http://leandro.iqm.unicamp.br" 
+  write(*,"(a)") "#" 
+  write(*,"(a)") "# Reference:" 
+  write(*,"(a)") "# L. Martinez, A. Ferrari, F. C. Gozzo," 
+  write(*,"(a)") "# A model evaluation score for ... 2016" 
+  write(*,"(a)") "#" 
+
   narg = iargc()
   if ( narg /= 4 ) then
     write(*,*) ' ERROR: Run with: ./xcompactlog [pdb list 1] [pdb list 2] [align list] [output]  '
@@ -56,19 +70,6 @@ program xcompactlog
 
   ! Print the input options
 
-  write(*,"(a)") "#" 
-  write(*,"(a)") "# G-score calculator " 
-  write(*,"(a)") "#" 
-  write(*,"(a)") "# XCOMPACTLOG: Align log file conversion to compact form, from " 
-  write(*,"(a)") "#              alignments of disjoint sets of structures. "
-  write(*,"(a)") "#" 
-  write(*,"(a)") "# L. Martinez - Institute of Chemistry, University of Campinas" 
-  write(*,"(a)") "# http://leandro.iqm.unicamp.br" 
-  write(*,"(a)") "#" 
-  write(*,"(a)") "# Reference:" 
-  write(*,"(a)") "# L. Martinez, A. Ferrari, F. C. Gozzo," 
-  write(*,"(a)") "# A model evaluation score for ... 2016" 
-  write(*,"(a)") "#" 
   write(*,"(a,a)") "# First list of model PDB files: ", trim(adjustl(pdb_list1)) 
   write(*,"(a,a)") "# Second list of model PDB files: ", trim(adjustl(pdb_list2)) 
   write(*,"(a,a)") "# List of alignment files: ", trim(adjustl(align_list)) 

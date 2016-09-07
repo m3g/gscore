@@ -27,9 +27,20 @@ program xgcorrelation
   logical :: error
   type(model_type), allocatable :: model(:)
 
+  write(*,"(a)") "#" 
+  write(*,"(a)") "# G-score correlation calculator " 
+  call title()
+  write(*,"(a)") "# L. Martinez - Institute of Chemistry, University of Campinas" 
+  write(*,"(a)") "# http://leandro.iqm.unicamp.br" 
+  write(*,"(a)") "#" 
+  write(*,"(a)") "# Reference:" 
+  write(*,"(a)") "# L. Martinez, A. Ferrari, F. C. Gozzo," 
+  write(*,"(a)") "# A model evaluation score for ... 2016" 
+  write(*,"(a)") "#" 
+
   narg = iargc()
   if ( narg /= 4 ) then
-    write(*,*) ' ERROR: Run with: ./gcorrelation [reference align log] [pdb list] [gscore output] [output]'
+    write(*,*) ' ERROR: Run with: ./xgcorrelation [reference align log] [pdb list] [gscore output] [output]'
     stop
   end if
   call getarg(1,alignlog)
@@ -39,16 +50,6 @@ program xgcorrelation
 
   ! Print the input options
 
-  write(*,"(a)") "#" 
-  write(*,"(a)") "# G-score correlation calculator " 
-  write(*,"(a)") "#" 
-  write(*,"(a)") "# L. Martinez - Institute of Chemistry, University of Campinas" 
-  write(*,"(a)") "# http://leandro.iqm.unicamp.br" 
-  write(*,"(a)") "#" 
-  write(*,"(a)") "# Reference:" 
-  write(*,"(a)") "# L. Martinez, A. Ferrari, F. C. Gozzo," 
-  write(*,"(a)") "# A model evaluation score for ... 2016" 
-  write(*,"(a)") "#" 
   write(*,"(a,a)") "# Log of alignment to reference: ", trim(adjustl(alignlog)) 
   write(*,"(a,a)") "# Target PDB file list: ", trim(adjustl(pdblist)) 
   write(*,"(a,a)") "# G-score data file: ", trim(adjustl(gscorefile)) 

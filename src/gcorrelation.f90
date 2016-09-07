@@ -23,6 +23,17 @@ program gcorrelation
   character(len=200) :: gscorefile, record, output, reference, name
   logical :: error
 
+  write(*,"(a)") "#" 
+  write(*,"(a)") "# G-score correlation calculator " 
+  call title()
+  write(*,"(a)") "# L. Martinez - Institute of Chemistry, University of Campinas" 
+  write(*,"(a)") "# http://leandro.iqm.unicamp.br" 
+  write(*,"(a)") "#" 
+  write(*,"(a)") "# Reference:" 
+  write(*,"(a)") "# L. Martinez, A. Ferrari, F. C. Gozzo," 
+  write(*,"(a)") "# A model evaluation score for ... 2016" 
+  write(*,"(a)") "#" 
+
   narg = iargc()
   if ( narg /= 4 ) then
     write(*,*) ' ERROR: Run with: ./gcorrelation [reference] [compact align log] [gscore output] [output]'
@@ -35,16 +46,6 @@ program gcorrelation
 
   ! Print the input options
 
-  write(*,"(a)") "#" 
-  write(*,"(a)") "# G-score correlation calculator " 
-  write(*,"(a)") "#" 
-  write(*,"(a)") "# L. Martinez - Institute of Chemistry, University of Campinas" 
-  write(*,"(a)") "# http://leandro.iqm.unicamp.br" 
-  write(*,"(a)") "#" 
-  write(*,"(a)") "# Reference:" 
-  write(*,"(a)") "# L. Martinez, A. Ferrari, F. C. Gozzo," 
-  write(*,"(a)") "# A model evaluation score for ... 2016" 
-  write(*,"(a)") "#" 
   write(*,"(a,a)") "# Reference model: ", trim(adjustl(reference)) 
   write(*,"(a,a)") "# Alignment log file (compact form): ", trim(adjustl(compactlog)) 
   write(*,"(a,a)") "# G-score data file: ", trim(adjustl(gscorefile)) 

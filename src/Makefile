@@ -51,12 +51,14 @@ $(BIN)/compactlog : Makefile $(MODULES) compactlog.o \
                                         model_index.o \
                                         sort.o \
                                         read_compactlog.o \
+                                        title.o \
                                         progress_bar.o
 	$(FORTRAN) -o $(BIN)/compactlog $(MODULES) \
                     compactlog.o \
                     model_index.o \
                     sort.o \
                     read_compactlog.o \
+                    title.o \
                     progress_bar.o \
                     $(FLAGS)
 
@@ -64,34 +66,40 @@ $(BIN)/xcompactlog : Makefile $(MODULES) xcompactlog.o \
                                          model_index.o \
                                          sort.o \
                                          read_compactlog.o \
+                                         title.o \
                                          progress_bar.o
 	$(FORTRAN) -o $(BIN)/xcompactlog $(MODULES) \
                     xcompactlog.o \
                     model_index.o \
                     sort.o \
                     read_compactlog.o \
+                    title.o \
                     progress_bar.o \
                     $(FLAGS)
 
 $(BIN)/gscore : Makefile $(MODULES) gscore.o \
                                     sort.o \
                                     read_compactlog.o \
+                                    title.o \
                                     progress_bar.o
 	$(FORTRAN) -o $(BIN)/gscore $(MODULES) \
                     gscore.o \
                     sort.o \
                     read_compactlog.o \
+                    title.o \
                     progress_bar.o \
                     $(FLAGS)
 
 $(BIN)/xgscore : Makefile $(MODULES) xgscore.o \
                                      sort.o \
                                      read_compactlog.o \
+                                     title.o \
                                      progress_bar.o
 	$(FORTRAN) -o $(BIN)/xgscore $(MODULES) \
                     xgscore.o \
                     sort.o \
                     read_compactlog.o \
+                    title.o \
                     progress_bar.o \
                     $(FLAGS)
 
@@ -99,12 +107,14 @@ $(BIN)/gcorrelation : Makefile $(MODULES) gcorrelation.o \
                                           model_index.o \
                                           sort.o \
                                           read_compactlog.o \
+                                          title.o \
                                           progress_bar.o
 	$(FORTRAN) -o $(BIN)/gcorrelation $(MODULES) \
                     gcorrelation.o \
                     model_index.o \
                     sort.o \
                     read_compactlog.o \
+                    title.o \
                     progress_bar.o \
                     $(FLAGS)
 
@@ -112,12 +122,14 @@ $(BIN)/xgcorrelation : Makefile $(MODULES) xgcorrelation.o \
                                            model_index.o \
                                            sort.o \
                                            read_compactlog.o \
+                                           title.o \
                                            progress_bar.o
 	$(FORTRAN) -o $(BIN)/xgcorrelation $(MODULES) \
                     xgcorrelation.o \
                     model_index.o \
                     sort.o \
                     read_compactlog.o \
+                    title.o \
                     progress_bar.o \
                     $(FLAGS)
 
@@ -152,6 +164,9 @@ model_index.o : Makefile model_index.f90
 
 progress_bar.o : Makefile progress_bar.f90 
 	$(FORTRAN) -c progress_bar.f90 $(FLAGS)
+
+title.o : Makefile title.f90 
+	$(FORTRAN) -c title.f90 $(FLAGS)
 
 sort.o : Makefile sort.f90 
 	$(FORTRAN) -c sort.f90 $(FLAGS)

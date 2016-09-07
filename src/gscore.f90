@@ -22,6 +22,13 @@ program gscore
   double precision :: scorecut
   character(len=200) :: record, output
 
+  write(*,"(a)") "#" 
+  write(*,"(a)") "# G-score calculator " 
+  call title()
+  write(*,"(a)") "# L. Martinez - Institute of Chemistry, University of Campinas" 
+  write(*,"(a)") "# http://leandro.iqm.unicamp.br" 
+  write(*,"(a)") "#" 
+
   narg = iargc()
   if ( narg /= 3 ) then
     write(*,*) ' ERROR: Run with: ./gscore [compact align log] [score cut] [output file]'
@@ -38,12 +45,6 @@ program gscore
 
   ! Print the input options
 
-  write(*,"(a)") "#" 
-  write(*,"(a)") "# G-score calculator " 
-  write(*,"(a)") "#" 
-  write(*,"(a)") "# L. Martinez - Institute of Chemistry, University of Campinas" 
-  write(*,"(a)") "# http://leandro.iqm.unicamp.br" 
-  write(*,"(a)") "#" 
   write(*,"(a)") "# Reference:" 
   write(*,"(a)") "# L. Martinez, A. Ferrari, F. C. Gozzo," 
   write(*,"(a)") "# A model evaluation score for ... 2016" 
