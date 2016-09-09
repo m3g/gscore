@@ -4,6 +4,8 @@
 
 subroutine progress(current,start,end)
 
+  implicit none
+  integer :: i
   integer :: current, start, end
 
   if ( current == start ) then
