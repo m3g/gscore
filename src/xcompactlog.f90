@@ -45,6 +45,13 @@ program xcompactlog
   narg = iargc()
   if ( narg /= 4 ) then
     write(*,*) ' ERROR: Run with: ./xcompactlog [pdb list 1] [pdb list 2] [align list] [output]  '
+    write(*,*) 
+    write(*,*) '        Where: [pdb list 1] is a list of PDB files of the reference ensemble. '
+    write(*,*) '               [pdb list 2] is a list of PDB files of the model ensemble. '
+    write(*,*) '               [align list] is the list of LovoAlign log files of the model set '
+    write(*,*) '                            aligned to the reference set. '
+    write(*,*) '               [output] is the name of the output file to be generated. '
+    write(*,*)
     stop
   end if
 
@@ -70,8 +77,8 @@ program xcompactlog
 
   ! Print the input options
 
-  write(*,"(a,a)") "# First list of model PDB files: ", trim(adjustl(pdb_list1)) 
-  write(*,"(a,a)") "# Second list of model PDB files: ", trim(adjustl(pdb_list2)) 
+  write(*,"(a,a)") "# Reference PDB files list: ", trim(adjustl(pdb_list1)) 
+  write(*,"(a,a)") "# Model PDB files list: ", trim(adjustl(pdb_list2)) 
   write(*,"(a,a)") "# List of alignment files: ", trim(adjustl(align_list)) 
   write(*,"(a)") "#" 
   write(*,"(a,a)") "# Will create compact log for GDT_TS: ", trim(adjustl(gdt_log))
