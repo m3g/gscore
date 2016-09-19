@@ -86,16 +86,19 @@ subroutine read_xcompactlog(unit)
     write(*,*) ' ERROR: Could not read data from file: ', trim(adjustl(compactlog))
     stop
   end if
-  if ( index(record,"GDT_TS") /= 0 ) then
-    write(*,"(a)") '# File contains GDT_TS score information. '
-    score_type = 1
-  end if
-  if ( index(record,"TM-score") /= 0 ) then
-    write(*,"(a)") '# File contains TM-score information. '
-    score_type = 2
-  end if
   read(unit,*) ! Ignore line
   read(unit,*) ! Ignore line
+  read(unit,"(a200)") record
+  if ( index(record,"Score type:") /= 0 ) then
+    if ( index(record,"GDT_TS") /= 0 ) then
+      write(*,"(a)") '# File contains GDT_TS score information. '
+      score_type = 1
+    end if
+    if ( index(record,"TM-score") /= 0 ) then
+      write(*,"(a)") '# File contains TM-score information. '
+      score_type = 2
+    end if
+  end if
 
   ! Number of models of first set
   read(unit,*) nmodels1
