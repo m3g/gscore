@@ -34,7 +34,8 @@ BINARIES = $(BIN)/compactlog \
            $(BIN)/gscore \
            $(BIN)/xgscore \
            $(BIN)/gcorrelation \
-           $(BIN)/xgcorrelation
+           $(BIN)/xgcorrelation \
+           $(BIN)/dgscore
 
 MODULES = types.o \
           compactlog_data.o \
@@ -133,6 +134,19 @@ $(BIN)/xgcorrelation : Makefile $(MODULES) xgcorrelation.o \
                     progress_bar.o \
                     $(FLAGS)
 
+$(BIN)/dgscore : Makefile $(MODULES) dgscore.o \
+                                    model_index.o \
+                                    sort.o \
+                                    title.o \
+                                    progress_bar.o
+	$(FORTRAN) -o $(BIN)/dgscore $(MODULES) \
+                    dgscore.o \
+                    model_index.o \
+                    sort.o \
+                    title.o \
+                    progress_bar.o \
+                    $(FLAGS)
+
 #
 # Main program objects
 #
@@ -154,6 +168,9 @@ gcorrelation.o : Makefile gcorrelation.f90
 
 xgcorrelation.o : Makefile xgcorrelation.f90 
 	$(FORTRAN) -c xgcorrelation.f90 $(FLAGS)
+
+dgscore.o : Makefile dgscore.f90 
+	$(FORTRAN) -c dgscore.f90 $(FLAGS)
 
 #
 # Subroutine and function objects
