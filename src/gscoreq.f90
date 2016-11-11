@@ -1,19 +1,22 @@
 !
+! Program Gscore-Q
 !
-!
-
 
 program gscoreq
 
   use file_operations
   implicit none
   integer :: ioerr, npdb, npairs, fdomain, ldomain, ndomain, &
-             ires, iat, jat, nres, ipdb, jpdb, ipair, ncontacts, i, icount
+             ires, iat, jat, nres, ipdb, jpdb, ipair, i, icount, &
+             fcontact
+  integer, allocatable :: nextcontact(:)
   real :: dcontact, contact_square, d, ccut
   real, allocatable :: contact(:,:), x(:,:), correlation(:,:), degree(:)
   character(len=200), allocatable :: pdb(:)
   character(len=200) :: pdblist, record, compactlog, gscorelog, format
   logical, allocatable :: lcont(:,:)
+
+  ! Input parameters
 
   pdblist='small.txt'
   fdomain = 55
@@ -28,6 +31,8 @@ program gscoreq
 
   compactlog='compactlog.dat'
   gscorelog='gscoreq.dat'
+
+  ! Get number of PDB files and number of residues from input file
 
   open(10,file=pdblist,status='old',action='read',iostat=ioerr)
   npdb = 0
@@ -58,7 +63,8 @@ program gscoreq
   write(*,"(a,i8)") '# Number of residues in structure: ', nres
   write(*,"(a,i8)") '# Number of residues in domain: ', ndomain
   rewind(10)
-  allocate(contact(npdb,npairs),x(ndomain,3),pdb(npdb),lcont(npdb,npairs))
+  allocate(contact(npdb,npairs),x(ndomain,3),pdb(npdb),lcont(npdb,npairs),&
+           nextcontact(npairs))
 
   ! Computing contact matrix
 
@@ -137,25 +143,21 @@ program gscoreq
   i = 0
   do ipdb = 1, npdb - 1
     ! Number of contacts in this pdb
-    ncontacts = 0
-    ipair = 0
-    do iat = 1, ndomain - 1
-      do jat = iat + 1, ndomain 
-        ipair = ipair + 1
-        if ( lcont(ipdb,ipair) ) ncontacts = ncontacts + 1
-      end do
-    end do
+    fcontact = 0 
     do ipair = 1, npairs
-
+      if ( lcont(ipdb,ipair) ) then
+        nextcontact(ipair) = fcontact
+        fcontact = ipair
+      end if
     end do
     do jpdb = ipdb + 1, npdb
       i = i + 1
       call progress(i,1,npdb*(npdb-1)/2)
       icount = 0
-      do ipair = 1, npairs
-        if ( .not. lcont(ipdb,ipair) ) cycle
-        if ( .not. lcont(jpdb,ipair) ) cycle
-        icount = icount + 1
+      ipair = fcontact
+      do while( ipair > 0 ) 
+        if ( lcont(ipdb,ipair) .and. lcont(jpdb,ipair) ) icount = icount + 1
+        ipair = nextcontact(ipair)
       end do
       correlation(ipdb,jpdb) = real(icount)
       correlation(jpdb,ipdb) = real(icount)
@@ -176,8 +178,8 @@ program gscoreq
     call progress(ipdb,1,npdb)
     do jpdb = ipdb + 1, npdb
       if ( correlation(ipdb,jpdb) > ccut ) then
-        degree(ipdb) = degree(ipdb) + 1.d0
-        degree(jpdb) = degree(jpdb) + 1.d0
+        degree(ipdb) = degree(ipdb) + 1.e0
+        degree(jpdb) = degree(jpdb) + 1.e0
       end if
     end do
   end do
