@@ -1,0 +1,10 @@
+*.o
+*.mod
+*bin/compactlog 
+*bin/dgscore  
+*bin/gcorrelation  
+*bin/gscore  
+*bin/gscoreq  
+*bin/xcompactlog 
+*bin/xgcorrelation  
+*bin/xgscore
