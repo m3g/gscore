@@ -8,23 +8,28 @@ subroutine progress(current,start,end)
   integer :: i, factor
   integer :: current, start, end
 
-  ! Only display steps of 0.01%
+  ! If last step, print and return
 
-  factor = (end - start)/10000
-  if ( ( mod(current-start,factor) /= 0 ) ) return
+  if ( current == end ) then
+    write(*,"(24a,$)") (achar(8),i=1,24)
+    write(*,"(i10,' of ',i10)") current, end
+    return
+  end if
+
+  ! If first step, print
 
   if ( current == start ) then
     write(*,"('# Progress: ',i10,' of ', i10$)") start, end
     return
   end if
-  if ( current > start .and. current < end ) then
-    write(*,"(24a,$)") (achar(8),i=1,24)
-    write(*,"(i10,' of ',i10,$)") current, end
-  end if
-  if ( current == end ) then
-    write(*,"(24a,$)") (achar(8),i=1,24)
-    write(*,"(i10,' of ',i10)") current, end
-  end if
+
+  ! Only display steps of 0.01%
+
+  factor = max((end - start)/10000,1)
+  if ( ( mod(current-start,factor) /= 0 ) ) return
+
+  write(*,"(24a,$)") (achar(8),i=1,24)
+  write(*,"(i10,' of ',i10,$)") current, end
  
 end subroutine progress
 

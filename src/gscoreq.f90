@@ -7,14 +7,13 @@ program gscoreq
   use file_operations
   implicit none
   integer :: ioerr, npdb, npairs, fdomain, ldomain, ndomain, &
-             ires, iat, jat, nres, ipdb, jpdb, ipair, i, icount, &
-             fcontact
-  integer, allocatable :: nextcontact(:)
+             ires, iat, jat, nres, ipdb, jpdb, ipair, i, icount
+  integer, allocatable :: ncontacts(:), fcontact(:), nextcontact(:,:)
   real :: dcontact, contact_square, d, ccut
-  real, allocatable :: contact(:,:), x(:,:), correlation(:,:), degree(:)
+  real, allocatable :: x(:,:), correlation(:,:), degree(:)
   character(len=200), allocatable :: pdb(:)
   character(len=200) :: pdblist, record, compactlog, gscorelog, format
-  logical, allocatable :: lcont(:,:)
+  logical, allocatable :: contact(:,:)
 
   ! Input parameters
 
@@ -63,10 +62,9 @@ program gscoreq
   write(*,"(a,i8)") '# Number of residues in structure: ', nres
   write(*,"(a,i8)") '# Number of residues in domain: ', ndomain
   rewind(10)
-  allocate(contact(npdb,npairs),x(ndomain,3),pdb(npdb),lcont(npdb,npairs),&
-           nextcontact(npairs))
+  allocate(x(ndomain,3),pdb(npdb),contact(npdb,npairs))
 
-  ! Computing contact matrix
+  ! Computing contact vectors
 
   write(*,"(a)") "# Computing the contact vector for all structures ... "
   ipdb = 0
@@ -117,7 +115,7 @@ program gscoreq
     end do
     close(20)
    
-    ! Computing the contact matrix
+    ! Computing the contact logical vectors
 
     ipair = 0
     do iat = 1, ndomain - 1
@@ -126,10 +124,10 @@ program gscoreq
         d = (x(iat,1) - x(jat,1))**2 + &
             (x(iat,2) - x(jat,2))**2 + &
             (x(iat,3) - x(jat,3))**2
-        if ( d < contact_square ) then
-          lcont(ipdb,ipair) = .true.
+        if ( d <= contact_square ) then
+          contact(ipdb,ipair) = .true.
         else
-          lcont(ipdb,ipair) = .false.
+          contact(ipdb,ipair) = .false.
         end if
       end do
     end do
@@ -137,38 +135,53 @@ program gscoreq
   end do
   close(10)
 
-  write(*,"(a)") "# Computing the correlation matrix ... "
-  allocate(correlation(npdb,npdb),degree(npdb))
-  
-  i = 0
-  do ipdb = 1, npdb - 1
-    ! Number of contacts in this pdb
-    fcontact = 0 
+  ! Setting up the linked vectors for running only on existing contacts
+
+  write(*,"(a)") "# Setting up linked contact vectors ... "
+  allocate(fcontact(npdb),nextcontact(npdb,npairs),ncontacts(npdb))
+  do ipdb = 1, npdb
+    call progress(ipdb,1,npdb)
+    ncontacts(ipdb) = 0
+    fcontact(ipdb) = 0
     do ipair = 1, npairs
-      if ( lcont(ipdb,ipair) ) then
-        nextcontact(ipair) = fcontact
-        fcontact = ipair
+      if ( contact(ipdb,ipair) ) then
+        nextcontact(ipdb,ipair) = fcontact(ipdb)
+        fcontact(ipdb) = ipair
+        ncontacts(ipdb) = ncontacts(ipdb) + 1
       end if
     end do
+  end do
+  
+  write(*,"(a)") "# Computing the correlation matrix ... "
+  allocate(correlation(npdb,npdb))
+  i = 0
+  do ipdb = 1, npdb - 1
     do jpdb = ipdb + 1, npdb
       i = i + 1
       call progress(i,1,npdb*(npdb-1)/2)
       icount = 0
-      ipair = fcontact
-      do while( ipair > 0 ) 
-        if ( lcont(ipdb,ipair) .and. lcont(jpdb,ipair) ) icount = icount + 1
-        ipair = nextcontact(ipair)
-      end do
+      if ( ncontacts(ipdb) <= ncontacts(jpdb) ) then
+        ipair = fcontact(ipdb)
+        do while( ipair > 0 ) 
+          if ( contact(ipdb,ipair) .and. contact(jpdb,ipair) ) icount = icount + 1
+          ipair = nextcontact(ipdb,ipair)
+        end do
+      else
+        ipair = fcontact(jpdb)
+        do while( ipair > 0 ) 
+          if ( contact(ipdb,ipair) .and. contact(jpdb,ipair) ) icount = icount + 1
+          ipair = nextcontact(jpdb,ipair)
+        end do
+      end if
       correlation(ipdb,jpdb) = real(icount)
       correlation(jpdb,ipdb) = real(icount)
     end do
   end do
-  do ipdb = 1, npdb
-    correlation(ipdb,ipdb) = 1.e0
-  end do
 
   ! Computing, for each model, the fraction of structures which have a correlation
-  ! greater than ccut
+  ! greater than ccut (the degree)
+
+  allocate(degree(npdb))
  
   write(*,"(a)") "# Computing the gscores ... "
   do ipdb = 1, npdb
