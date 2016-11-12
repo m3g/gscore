@@ -94,9 +94,11 @@ $(BIN)/gscore : Makefile $(MODULES) gscore.o \
 
 $(BIN)/qmatrix : Makefile $(MODULES) qmatrix.o \
                                     title.o \
+                                    sort.o \
                                     progress_bar.o
 	$(FORTRAN) -o $(BIN)/qmatrix $(MODULES) \
                     qmatrix.o \
+                    sort.o \
                     title.o \
                     progress_bar.o \
                     $(FLAGS)

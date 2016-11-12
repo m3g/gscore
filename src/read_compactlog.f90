@@ -43,6 +43,10 @@ subroutine read_compactlog(unit)
       write(*,"(a)") '# File contains TM-score information. '
       score_type = 2
     end if
+    if ( index(record,"Contact-correlation") /= 0 ) then
+      write(*,"(a)") '# File contains Contact-correlation information. '
+      score_type = 3
+    end if
   end if
   read(unit,*) nmodels
   allocate(scores(nmodels,nmodels),model(nmodels))

@@ -26,13 +26,17 @@ function model_index(name,model,n,error)
         model_index = imax
         return
       end if
+      iavg = imin + ( imax - imin ) / 2
+      if ( name == model(iavg)%name ) then
+        model_index = iavg
+        return
+      end if
       if ( imax == imin ) then
         error = .true.
         exit
       end if
-      iavg = imin + ( imax - imin ) / 2
-      if ( name >= model(iavg)%name ) imin = iavg + 1
-      if ( name <= model(iavg)%name ) imax = iavg
+      if ( name > model(iavg)%name ) imin = iavg + 1
+      if ( name < model(iavg)%name ) imax = iavg - 1
     end do
   end if
   if ( error ) then

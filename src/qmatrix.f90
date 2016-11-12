@@ -15,17 +15,18 @@
 
 program qmatrix
 
+  use types
   use file_operations
   implicit none
   integer :: narg
-  integer :: ioerr, npdb, npairs, fdomain, ldomain, ndomain, &
-             ires, iat, jat, nres, ipdb, jpdb, ipair, i, icount
+  integer :: ioerr, nmodels, npairs, fdomain, ldomain, ndomain, &
+             ires, iat, jat, nres, imodel, jmodel, ipair, i, icount
   integer, allocatable :: ncontacts(:), fcontact(:), nextcontact(:,:)
   real :: dcontact, contact_square, d 
   real, allocatable :: x(:,:), correlation(:,:)
-  character(len=200), allocatable :: pdb(:)
   character(len=200) :: pdblist, record, output, format
   logical, allocatable :: contact(:,:)
+  type(model_type), allocatable :: model(:)
 
 
   write(*,"(a)") "#" 
@@ -60,12 +61,12 @@ program qmatrix
   ! Get number of PDB files and number of residues from input file
 
   open(10,file=pdblist,status='old',action='read',iostat=ioerr)
-  npdb = 0
+  nmodels = 0
   do
     read(10,"(a200)",iostat=ioerr) record
     if ( ioerr /= 0 ) exit
-    npdb = npdb + 1
-    if ( npdb == 1 ) then
+    nmodels = nmodels + 1
+    if ( nmodels == 1 ) then
       nres = 0
       open(20,file=record,iostat=ioerr)
       if ( ioerr /= 0 ) then
@@ -89,30 +90,44 @@ program qmatrix
       close(20)
     end if
   end do
-  write(*,"(a,i8)") '# Number of PDB files: ', npdb
+  write(*,"(a,i8)") '# Number of PDB files: ', nmodels
   write(*,"(a,i8)") '# Number of residues in structure: ', nres
   write(*,"(a,i8)") '# First residue in domain: ', fdomain
   write(*,"(a,i8)") '# Last residue in domain: ', ldomain
   ndomain = ldomain-fdomain+1
   npairs = ndomain*(ndomain-1)/2
   write(*,"(a,i8)") '# Number of residues in domain: ', ndomain
-  allocate(x(ndomain,3),pdb(npdb),contact(npdb,npairs))
+  allocate(x(ndomain,3),contact(nmodels,npairs))
 
-  ! Computing contact vectors
+  ! Allocate model vector to sort names
 
+  allocate(model(nmodels))
   rewind(10)
-  write(*,"(a)") "# Computing the contact vector for all structures ... "
-  ipdb = 0
+  imodel = 0
   do
     read(10,"(a200)",iostat=ioerr) record
     if ( ioerr /= 0 ) exit
-    ipdb = ipdb + 1
-    call progress(ipdb,1,npdb)
-    pdb(ipdb) = record
+    if ( comment(record) ) cycle
+    imodel = imodel + 1
+    model(imodel)%name = basename(record)
+  end do
+  close(10)
+
+  !
+  ! Sort model names according to string comparisons
+  !
+
+  call sort_by_name(nmodels,model)
+
+  ! Computing contact vectors
+
+  write(*,"(a)") "# Computing the contact vector for all structures ... "
+  do imodel = 1, nmodels
+    call progress(imodel,1,nmodels)
 
     ! Reading coordinates of this PDB file
 
-    open(20,file=pdb(ipdb),iostat=ioerr)
+    open(20,file=model(imodel)%name,iostat=ioerr)
     iat = 0
     do
       read(20,"(a200)",iostat=ioerr) record 
@@ -122,7 +137,7 @@ program qmatrix
         read(record(23:26),*,iostat=ioerr) ires
         if ( ioerr /= 0 ) then
           write(*,*) ' ERROR: Could not read residue number for a CA atom. '
-          write(*,*) '        File: ', trim(adjustl(pdb(ipdb)))
+          write(*,*) '        File: ', trim(adjustl(model(imodel)%name))
           write(*,*) '        Line: ', trim(adjustl(record))
           close(20)
           close(10)
@@ -132,17 +147,20 @@ program qmatrix
           iat = iat + 1
           read(record(31:38),*,iostat=ioerr) x(iat,1)
           if ( ioerr /= 0 ) then
-            write(*,*) ' ERROR: Failed reading atom coordintes in file: ', trim(adjustl(pdb(ipdb)))
+            write(*,*) ' ERROR: Failed reading atom coordintes in file: ', &
+                        trim(adjustl(model(imodel)%name))
             stop
           end if
           read(record(39:46),*,iostat=ioerr) x(iat,2)
           if ( ioerr /= 0 ) then
-            write(*,*) ' ERROR: Failed reading atom coordintes in file: ', trim(adjustl(pdb(ipdb)))
+            write(*,*) ' ERROR: Failed reading atom coordintes in file: ', &
+                        trim(adjustl(model(imodel)%name))
             stop
           end if
           read(record(47:54),*,iostat=ioerr) x(iat,3)
           if ( ioerr /= 0 ) then
-            write(*,*) ' ERROR: Failed reading atom coordintes in file: ', trim(adjustl(pdb(ipdb)))
+            write(*,*) ' ERROR: Failed reading atom coordintes in file: ', &
+                        trim(adjustl(model(imodel)%name))
             stop
           end if
         end if
@@ -160,56 +178,55 @@ program qmatrix
             (x(iat,2) - x(jat,2))**2 + &
             (x(iat,3) - x(jat,3))**2
         if ( d <= contact_square ) then
-          contact(ipdb,ipair) = .true.
+          contact(imodel,ipair) = .true.
         else
-          contact(ipdb,ipair) = .false.
+          contact(imodel,ipair) = .false.
         end if
       end do
     end do
 
   end do
-  close(10)
 
   ! Setting up the linked vectors for running only on existing contacts
 
   write(*,"(a)") "# Setting up linked contact vectors ... "
-  allocate(fcontact(npdb),nextcontact(npdb,npairs),ncontacts(npdb))
-  do ipdb = 1, npdb
-    call progress(ipdb,1,npdb)
-    ncontacts(ipdb) = 0
-    fcontact(ipdb) = 0
+  allocate(fcontact(nmodels),nextcontact(nmodels,npairs),ncontacts(nmodels))
+  do imodel = 1, nmodels
+    call progress(imodel,1,nmodels)
+    ncontacts(imodel) = 0
+    fcontact(imodel) = 0
     do ipair = 1, npairs
-      if ( contact(ipdb,ipair) ) then
-        nextcontact(ipdb,ipair) = fcontact(ipdb)
-        fcontact(ipdb) = ipair
-        ncontacts(ipdb) = ncontacts(ipdb) + 1
+      if ( contact(imodel,ipair) ) then
+        nextcontact(imodel,ipair) = fcontact(imodel)
+        fcontact(imodel) = ipair
+        ncontacts(imodel) = ncontacts(imodel) + 1
       end if
     end do
   end do
   
   write(*,"(a)") "# Computing the correlation matrix ... "
-  allocate(correlation(npdb,npdb))
+  allocate(correlation(nmodels,nmodels))
   i = 0
-  do ipdb = 1, npdb - 1
-    do jpdb = ipdb + 1, npdb
+  do imodel = 1, nmodels - 1
+    do jmodel = imodel + 1, nmodels
       i = i + 1
-      call progress(i,1,npdb*(npdb-1)/2)
+      call progress(i,1,nmodels*(nmodels-1)/2)
       icount = 0
-      if ( ncontacts(ipdb) <= ncontacts(jpdb) ) then
-        ipair = fcontact(ipdb)
+      if ( ncontacts(imodel) <= ncontacts(jmodel) ) then
+        ipair = fcontact(imodel)
         do while( ipair > 0 ) 
-          if ( contact(ipdb,ipair) .and. contact(jpdb,ipair) ) icount = icount + 1
-          ipair = nextcontact(ipdb,ipair)
+          if ( contact(imodel,ipair) .and. contact(jmodel,ipair) ) icount = icount + 1
+          ipair = nextcontact(imodel,ipair)
         end do
       else
-        ipair = fcontact(jpdb)
+        ipair = fcontact(jmodel)
         do while( ipair > 0 ) 
-          if ( contact(ipdb,ipair) .and. contact(jpdb,ipair) ) icount = icount + 1
-          ipair = nextcontact(jpdb,ipair)
+          if ( contact(imodel,ipair) .and. contact(jmodel,ipair) ) icount = icount + 1
+          ipair = nextcontact(jmodel,ipair)
         end do
       end if
-      correlation(ipdb,jpdb) = real(icount)
-      correlation(jpdb,ipdb) = real(icount)
+      correlation(imodel,jmodel) = real(icount)
+      correlation(jmodel,imodel) = real(icount)
     end do
   end do
 
@@ -235,14 +252,14 @@ program qmatrix
   write(10,"(a)") '# Computed with Qcorrelation'
   write(10,"(a,a)") '# PDB list: ', trim(adjustl(pdblist))
   write(10,"(a,a)") '# Score type: Contact-correlation'
-  write(10,*) npdb
-  do ipdb = 1, npdb
-    write(10,*) ipdb, trim(adjustl(basename(pdb(ipdb))))
+  write(10,*) nmodels
+  do imodel = 1, nmodels
+    write(10,*) imodel, trim(adjustl(basename(model(imodel)%name)))
   end do
-  write(format,*) npdb
+  write(format,*) nmodels
   format = "("//trim(adjustl(format))//"(tr1,f8.3))"
-  do ipdb = 1, npdb - 1
-    write(10,format) (correlation(ipdb,jpdb),jpdb=ipdb+1,npdb)
+  do imodel = 1, nmodels - 1
+    write(10,format) (correlation(imodel,jmodel),jmodel=imodel+1,nmodels)
   end do
   close(10)
   write(*,"(a)") "#"

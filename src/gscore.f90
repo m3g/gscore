@@ -96,6 +96,9 @@ program gscore
   if ( score_type == 2 ) then
     write(10,"(a)") "# Score type: TM-score"
   end if
+  if ( score_type == 3 ) then
+    write(10,"(a)") "# Score type: Contact-correlation"
+  end if
   write(10,"(a,f12.5)") "# Score cutoff: ", scorecut
   write(10,"(a)") "#"
   write(10,"(a)") "#    G-score  Model"
