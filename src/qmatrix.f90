@@ -68,7 +68,7 @@ program qmatrix
     nmodels = nmodels + 1
     if ( nmodels == 1 ) then
       nres = 0
-      open(20,file=record,iostat=ioerr)
+      open(20,file=record,iostat=ioerr,action="read",status="old")
       if ( ioerr /= 0 ) then
         write(*,*) ' ERROR: Could not open PDB file: ', trim(adjustl(record))
         close(10)
@@ -109,6 +109,7 @@ program qmatrix
     if ( ioerr /= 0 ) exit
     if ( comment(record) ) cycle
     imodel = imodel + 1
+    model(imodel)%file = record
     model(imodel)%name = basename(record)
   end do
   close(10)
@@ -127,7 +128,7 @@ program qmatrix
 
     ! Reading coordinates of this PDB file
 
-    open(20,file=model(imodel)%name,iostat=ioerr)
+    open(20,file=model(imodel)%file,status="old",action="read",iostat=ioerr)
     iat = 0
     do
       read(20,"(a200)",iostat=ioerr) record 
@@ -140,7 +141,6 @@ program qmatrix
           write(*,*) '        File: ', trim(adjustl(model(imodel)%name))
           write(*,*) '        Line: ', trim(adjustl(record))
           close(20)
-          close(10)
           stop
         end if
         if ( ires >= fdomain .and. ires <= ldomain ) then
@@ -149,25 +149,25 @@ program qmatrix
           if ( ioerr /= 0 ) then
             write(*,*) ' ERROR: Failed reading atom coordintes in file: ', &
                         trim(adjustl(model(imodel)%name))
-            stop
+            close(20) ; stop
           end if
           read(record(39:46),*,iostat=ioerr) x(iat,2)
           if ( ioerr /= 0 ) then
             write(*,*) ' ERROR: Failed reading atom coordintes in file: ', &
                         trim(adjustl(model(imodel)%name))
-            stop
+            close(20) ; stop
           end if
           read(record(47:54),*,iostat=ioerr) x(iat,3)
           if ( ioerr /= 0 ) then
             write(*,*) ' ERROR: Failed reading atom coordintes in file: ', &
                         trim(adjustl(model(imodel)%name))
-            stop
+            close(20) ; stop
           end if
         end if
       end if
     end do
     close(20)
-   
+
     ! Computing the contact logical vectors
 
     ipair = 0
