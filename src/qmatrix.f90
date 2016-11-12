@@ -55,6 +55,7 @@ program qmatrix
     fdomain = 0
     ldomain = 0
   end if
+  if ( fdomain == 0 .and. ldomain == 0 ) ndomain = 0
 
   ! Get number of PDB files and number of residues from input file
 
@@ -78,7 +79,7 @@ program qmatrix
         if ( record(1:4) == "ATOM" .and. &
              trim(adjustl(record(13:16))) == "CA" ) then
           nres = nres + 1
-          if ( fdomain == 0 .and. ldomain == 0 ) then
+          if ( ndomain == 0 ) then
             read(record(23:26),*,iostat=ioerr) ires
             if ( nres == 1 ) fdomain = ires
             ldomain = ires
@@ -218,7 +219,18 @@ program qmatrix
 
   ! Compact log file:
 
-  open(10,file=output)
+  write(*,"(a)") "# Writting output file ... "
+  open(10,file=output,status="new",iostat=ioerr)
+  if ( ioerr /= 0 ) then
+    write(*,*) ' Warning: File ', trim(adjustl(output)), ' exists. Overwrite it? (Y/N) '
+    read(*,*) record
+    if ( record == "Y" ) then
+      open(10,file=output,iostat=ioerr)
+    else
+      write(*,*) ' Quitting ... '
+      stop
+    end if
+  end if
   write(10,"(a)") '# This a compact contact-correlation file'
   write(10,"(a)") '# Computed with Qcorrelation'
   write(10,"(a,a)") '# PDB list: ', trim(adjustl(pdblist))
@@ -233,12 +245,16 @@ program qmatrix
     write(10,format) (correlation(ipdb,jpdb),jpdb=ipdb+1,npdb)
   end do
   close(10)
+  write(*,"(a)") "#"
+  write(*,"(3a)") "# Output file: ", trim(adjustl(output)), " written."
+  write(*,"(a)") "#"
+  write(*,"(a)") "# END "
 
 end program qmatrix
 
 subroutine argerror()
 
-  write(*,*) ' Run with: gscore-q pdblist.txt qmatrix.dat [dcontact] [fdomain] [ldomain] '
+  write(*,*) ' Run with: qmatrix pdblist.txt qmatrix.dat [dcontact] [fdomain] [ldomain] '
   write(*,*) ' Where: pdblist.txt is the list of PDB files. '
   write(*,*) '        qmatrix.dat is the output correlation matrix. '
   write(*,*) '        dcontact is the distance that defines a contact between CA atoms. '
