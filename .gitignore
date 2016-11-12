@@ -4,7 +4,7 @@
 *bin/dgscore  
 *bin/gcorrelation  
 *bin/gscore  
-*bin/gscoreq  
+*bin/qmatrix
 *bin/xcompactlog 
 *bin/xgcorrelation  
 *bin/xgscore

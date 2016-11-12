@@ -32,7 +32,7 @@ endif
 BINARIES = $(BIN)/compactlog \
            $(BIN)/xcompactlog \
            $(BIN)/gscore \
-           $(BIN)/gscoreq \
+           $(BIN)/qmatrix \
            $(BIN)/xgscore \
            $(BIN)/gcorrelation \
            $(BIN)/xgcorrelation \
@@ -92,13 +92,11 @@ $(BIN)/gscore : Makefile $(MODULES) gscore.o \
                     progress_bar.o \
                     $(FLAGS)
 
-$(BIN)/gscoreq : Makefile $(MODULES) gscoreq.o \
-                                    sort.o \
+$(BIN)/qmatrix : Makefile $(MODULES) qmatrix.o \
                                     title.o \
                                     progress_bar.o
-	$(FORTRAN) -o $(BIN)/gscoreq $(MODULES) \
-                    gscoreq.o \
-                    sort.o \
+	$(FORTRAN) -o $(BIN)/qmatrix $(MODULES) \
+                    qmatrix.o \
                     title.o \
                     progress_bar.o \
                     $(FLAGS)
@@ -172,8 +170,8 @@ xcompactlog.o : Makefile xcompactlog.f90
 gscore.o : Makefile gscore.f90 
 	$(FORTRAN) -c gscore.f90 $(FLAGS)
 
-gscoreq.o : Makefile gscoreq.f90 
-	$(FORTRAN) -c gscoreq.f90 $(FLAGS)
+qmatrix.o : Makefile qmatrix.f90 
+	$(FORTRAN) -c qmatrix.f90 $(FLAGS)
 
 xgscore.o : Makefile xgscore.f90 
 	$(FORTRAN) -c xgscore.f90 $(FLAGS)

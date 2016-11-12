@@ -1,35 +1,60 @@
 !
-! Program Gscore-Q
+! Q-matrix calculator
+!
+! Program qmatrix
+!
+! This program computes the correlation matrix of a series
+! of PDB structures, considering the Q-score, which is the
+! number of contacts shared by both structures.
+!
+! L. Martinez
+! Institute of Chemistry - University of Campinas
+! Nov 11, 2016
+! http://leandro.iqm.unicamp.br
 !
 
-program gscoreq
+program qmatrix
 
   use file_operations
   implicit none
+  integer :: narg
   integer :: ioerr, npdb, npairs, fdomain, ldomain, ndomain, &
              ires, iat, jat, nres, ipdb, jpdb, ipair, i, icount
   integer, allocatable :: ncontacts(:), fcontact(:), nextcontact(:,:)
-  real :: dcontact, contact_square, d, ccut
-  real, allocatable :: x(:,:), correlation(:,:), degree(:)
+  real :: dcontact, contact_square, d 
+  real, allocatable :: x(:,:), correlation(:,:)
   character(len=200), allocatable :: pdb(:)
-  character(len=200) :: pdblist, record, compactlog, gscorelog, format
+  character(len=200) :: pdblist, record, output, format
   logical, allocatable :: contact(:,:)
+
+
+  write(*,"(a)") "#" 
+  write(*,"(a)") "# Contact correlation" 
+  call title()
+  write(*,"(a)") "# L. Martinez - Institute of Chemistry, University of Campinas" 
+  write(*,"(a)") "# http://leandro.iqm.unicamp.br" 
+  write(*,"(a)") "#" 
 
   ! Input parameters
 
-  pdblist='small.txt'
-  fdomain = 55
-  ldomain = 306
-  ndomain = ldomain-fdomain+1
-  npairs = ndomain*(ndomain-1)/2
-
-  dcontact = 8.d0
+  narg = iargc()
+  call getarg(1,pdblist)
+  call getarg(2,output)
+  call getarg(3,record)
+  read(record,*,iostat=ioerr) dcontact
+  if ( ioerr /= 0 ) call argerror()
   contact_square = dcontact*dcontact
-  
-  ccut = 0.5
-
-  compactlog='compactlog.dat'
-  gscorelog='gscoreq.dat'
+  if ( narg == 5 ) then
+    call getarg(4,record)
+    read(record,*,iostat=ioerr) fdomain
+    if ( ioerr /= 0 ) call argerror()
+    call getarg(5,record)
+    read(record,*,iostat=ioerr) ldomain
+    if ( ioerr /= 0 ) call argerror()
+  else
+    fdomain = 0
+    ldomain = 0
+  end if
 
   ! Get number of PDB files and number of residues from input file
 
@@ -53,6 +78,11 @@ program gscoreq
         if ( record(1:4) == "ATOM" .and. &
              trim(adjustl(record(13:16))) == "CA" ) then
           nres = nres + 1
+          if ( fdomain == 0 .and. ldomain == 0 ) then
+            read(record(23:26),*,iostat=ioerr) ires
+            if ( nres == 1 ) fdomain = ires
+            ldomain = ires
+          end if
         end if
       end do
       close(20)
@@ -60,12 +90,16 @@ program gscoreq
   end do
   write(*,"(a,i8)") '# Number of PDB files: ', npdb
   write(*,"(a,i8)") '# Number of residues in structure: ', nres
+  write(*,"(a,i8)") '# First residue in domain: ', fdomain
+  write(*,"(a,i8)") '# Last residue in domain: ', ldomain
+  ndomain = ldomain-fdomain+1
+  npairs = ndomain*(ndomain-1)/2
   write(*,"(a,i8)") '# Number of residues in domain: ', ndomain
-  rewind(10)
   allocate(x(ndomain,3),pdb(npdb),contact(npdb,npairs))
 
   ! Computing contact vectors
 
+  rewind(10)
   write(*,"(a)") "# Computing the contact vector for all structures ... "
   ipdb = 0
   do
@@ -178,38 +212,15 @@ program gscoreq
     end do
   end do
 
-  ! Computing, for each model, the fraction of structures which have a correlation
-  ! greater than ccut (the degree)
-
-  allocate(degree(npdb))
- 
-  write(*,"(a)") "# Computing the gscores ... "
-  do ipdb = 1, npdb
-    degree(ipdb) = 1.e0
-  end do
-  do ipdb = 1, npdb - 1
-    call progress(ipdb,1,npdb)
-    do jpdb = ipdb + 1, npdb
-      if ( correlation(ipdb,jpdb) > ccut ) then
-        degree(ipdb) = degree(ipdb) + 1.e0
-        degree(jpdb) = degree(jpdb) + 1.e0
-      end if
-    end do
-  end do
-  do ipdb = 1, npdb
-    degree(ipdb) = degree(ipdb) / npdb
-  end do
-  call progress(npdb,1,npdb)
-
   !
   ! Writting results
   !
 
   ! Compact log file:
 
-  open(10,file=compactlog)
+  open(10,file=output)
   write(10,"(a)") '# This a compact contact-correlation file'
-  write(10,"(a)") '# Computed with GscoreQ'
+  write(10,"(a)") '# Computed with Qcorrelation'
   write(10,"(a,a)") '# PDB list: ', trim(adjustl(pdblist))
   write(10,"(a,a)") '# Score type: Contact-correlation'
   write(10,*) npdb
@@ -223,22 +234,17 @@ program gscoreq
   end do
   close(10)
 
-  ! Gscore file:
+end program qmatrix
 
-  open(10,file='gscoreq.dat')
-  write(10,"(a)") "# Output of GscoreQ"
-  write(10,"(a,a)") "# Associated compact log file: ", trim(adjustl(compactlog))
-  write(10,"(a)") "# Score type: Contact-correlation"
-  write(10,"(a,e12.5)") "# Score cutoff:", ccut
-  write(10,"(a)") "#"
-  write(10,"(a)") "#    G-score  Model"
-  do ipdb = 1, npdb
-    write(10,"(f12.5,tr2,a)") degree(ipdb), trim(adjustl(pdb(ipdb)))
-  end do
-  close(10)
+subroutine argerror()
 
-end program gscoreq
+  write(*,*) ' Run with: gscore-q pdblist.txt qmatrix.dat [dcontact] [fdomain] [ldomain] '
+  write(*,*) ' Where: pdblist.txt is the list of PDB files. '
+  write(*,*) '        qmatrix.dat is the output correlation matrix. '
+  write(*,*) '        dcontact is the distance that defines a contact between CA atoms. '
+  write(*,*) '        fdomain and ldomain (optional ) are the number of first and last residues '
+  write(*,*) '             to be considered. '
+  write(*,*)
+  stop
 
-
-
-
+end subroutine argerror
