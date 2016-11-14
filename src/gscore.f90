@@ -36,7 +36,7 @@ program gscore
     write(*,*) '           [score cut] is the similarity cutoff for the score '
     write(*,*) '           [output file] is the name of the output file. '
     write(*,*) '           [norm type] is the normalization to be used for the contact score.'
-    write(*,*) '                       options: none, maxcontacts, ncontacts, ijmax (default: ijmax)'
+    write(*,*) '                       options: none, maxcontacts, ncontacts, ijmax (default: maxcontacts)'
     stop
   end if
   call getarg(1,compactlog)
@@ -47,7 +47,7 @@ program gscore
     stop
   end if
   call getarg(3,output)
-  normtype = "ijmax"
+  normtype = "maxcontacts"
   if ( narg == 4 ) then
     call getarg(4,normtype)
   end if
