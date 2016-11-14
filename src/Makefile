@@ -1,28 +1,16 @@
 #
 # Which compiler to use
 #
-#COMPILER = INTEL
-COMPILER = GNU
-#
-#
-ifeq "$(COMPILER)" "INTEL"
-   MPIFORTRAN = mpiifort
-   FORTRAN = ifort
-   FLAGS = -O3
-endif
-ifeq "$(COMPILER)" "GNU"
-   MPIFORTRAN = mpif90
-   FORTRAN = gfortran
-   FLAGS = -O3
-endif
+FORTRAN = gfortran
 
-# Directory for executables
-BIN=../bin
-
+FLAGS = -O3 --fast-math
 ifeq ($(MAKECMDGOALS),devel)
   FLAGS = -Wall -fcheck=bounds
 endif
  
+# Directory for executables
+BIN=../bin
+
 ###################################################################
 #                                                                 #
 # Generally no modifications are required after this.             #
@@ -42,8 +30,16 @@ MODULES = types.o \
           compactlog_data.o \
           file_operations.o
 
-all : bindir $(BINARIES)
-devel : bindir $(BINARIES)
+all : $(BIN) $(BINARIES)
+devel : $(BIN) $(BINARIES)
+
+#
+#  Binaries directory
+#
+
+$(BIN) : 
+	@mkdir -p $(BIN)
+
 
 #
 # Link
@@ -212,21 +208,14 @@ read_compactlog.o : Makefile read_compactlog.f90
 
 modules : $(MODULES) 
 
-compactlog_data.o : compactlog_data.f90 types.o
-	$(FORTRAN) -c compactlog_data.f90 types.f90 $(FLAGS)
+compactlog_data.o : compactlog_data.f90 
+	$(FORTRAN) -c compactlog_data.f90 $(FLAGS)
 
 types.o : types.f90
 	$(FORTRAN) -c types.f90 $(FLAGS)
 
 file_operations.o : file_operations.f90
 	$(FORTRAN) -c file_operations.f90 $(FLAGS)
-
-#
-#  Binary directory
-#
-
-bindir : 
-	@mkdir -p $(BIN)
 
 #
 # Clean everything

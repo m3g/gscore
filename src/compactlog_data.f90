@@ -2,7 +2,7 @@ module compactlog_data
 
   use types
   character(len=200) :: compactlog
-  integer :: nmodels, score_type
+  integer :: nmodels, score_type, maxcontacts
   double precision, allocatable :: scores(:,:)
   type(model_type), allocatable :: model(:)
 

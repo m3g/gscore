@@ -48,13 +48,22 @@ subroutine read_compactlog(unit)
       score_type = 3
     end if
   end if
-  read(unit,*) nmodels
+  if ( score_type == 1 .or. score_type == 2 ) then
+    read(unit,*) nmodels
+  else if ( score_type == 3 ) then
+    read(unit,*) nmodels, maxcontacts
+  end if
+  
   allocate(scores(nmodels,nmodels),model(nmodels))
 
   ! Read scores 
  
   do i = 1, nmodels
-    read(unit,*) j, model(i)%name
+    if ( score_type == 1 .or. score_type == 2 ) then
+      read(unit,*) j, model(i)%name
+    else if ( score_type == 3 ) then
+      read(unit,*) j, model(i)%name, model(i)%ncontacts
+    end if
   end do
   do i = 1, nmodels-1
     call progress(i,1,nmodels)
@@ -101,6 +110,10 @@ subroutine read_xcompactlog(unit)
     if ( index(record,"TM-score") /= 0 ) then
       write(*,"(a)") '# File contains TM-score information. '
       score_type = 2
+    end if
+    if ( index(record,"Contact-correlation") /= 0 ) then
+      write(*,"(a)") '# File contains Contact-correlation information. '
+      score_type = 3
     end if
   end if
 

@@ -17,10 +17,10 @@ program gcorrelation
   use file_operations
   use compactlog_data
   implicit none
-  integer :: i, iref, imodel
-  integer :: narg, ioerr, model_index
-  double precision :: gscore
-  character(len=200) :: gscorefile, record, output, reference, name
+  integer :: i, iref, imodel, normalization
+  integer :: narg, ioerr, model_index, model_index2
+  double precision :: gscore, cutoff
+  character(len=200) :: gscorefile, record, output, reference, name, normtype
   logical :: error
 
   write(*,"(a)") "#" 
@@ -56,6 +56,12 @@ program gcorrelation
 
   call read_compactlog(10)
 
+  ! Score type read from file
+
+  if ( score_type == 1 ) write(*,"(a)") "# Score type: GDT_TS"
+  if ( score_type == 2 ) write(*,"(a)") "# Score type: TM-score"
+  if ( score_type == 3 ) write(*,"(a)") "# Score type: Contact-correlation"
+
   ! Read G-score for all models
 
   write(*,"(a)") "# Reading G-scores from file ... "
@@ -68,7 +74,27 @@ program gcorrelation
   do 
     read(10,"(a200)",iostat=ioerr) record
     if ( ioerr /= 0 ) exit
+   
+    ! Read normalization type for Contact-correlation
+
+    if ( index(record,"Score cutoff:") /= 0 ) then
+      read(record(16:28),*,iostat=ioerr) cutoff
+      if ( ioerr /= 0 ) then
+        write(*,*) ' ERROR: Could not read score cutoff from gscore file. '
+        close(10) ; stop
+      end if
+    end if
+    if ( score_type == 3 ) then
+      if ( index(record,"none") /= 0 ) normtype = "none"
+      if ( index(record,"maxcontacts") /= 0 ) normtype = "maxcontacts"
+      if ( index(record,"ncontacts") /= 0 ) normtype = "ncontacts"
+      if ( index(record,"ijmax") /= 0 ) normtype = "ijmax"
+    end if
+
     if ( comment(record) ) cycle
+
+    ! Read gscores from file
+
     i = i + 1
     call progress(i,1,nmodels)
     read(record,*,iostat=ioerr) gscore, name
@@ -88,19 +114,40 @@ program gcorrelation
   close(10)
 
   ! Checking which is the index of the reference model 
-  do i = 1, nmodels
-    if ( reference == model(i)%name ) iref = i
-  end do
 
+  iref = model_index(reference,model,nmodels,error)
+
+  !
   ! Now check the similarity of each model to the reference model
+  !
+
+  ! If the score type is contact correlation and it is normalized by maxcontacts
+ 
+  normalization = 1
+  if ( score_type == 3 ) then
+    write(*,"(a,a)") "# Normalization of contact-correlation: ", trim(adjustl(normtype))
+    ! Normalizing scores relative to this model accordingly 
+    if ( normtype == "maxcontacts" ) normalization = maxcontacts
+    if ( normtype == "ncontacts" ) normalization = model(iref)%ncontacts
+  end if
   
   write(*,"(a)") "# Checking the similarity of each model to the reference ... "
+  if ( score_type == 1 ) scores(iref,iref) = 100.d0
+  if ( score_type == 2 ) scores(iref,iref) = 1.d0
+  if ( score_type == 3 ) scores(iref,iref) = model(iref)%ncontacts
   do i = 1, nmodels
     call progress(i,1,nmodels)
+    if ( score_type == 3 ) then
+      if ( normtype == "ijmax" ) then
+        normalization = max(model(iref)%ncontacts,model(i)%ncontacts)
+      end if
+    end if
     if ( i < iref ) then
-      model(i)%similarity = scores(i,iref)
+      model(i)%similarity = scores(i,iref) / normalization
     else if ( i > iref ) then
-      model(i)%similarity = scores(iref,i)
+      model(i)%similarity = scores(iref,i) / normalization
+    else if ( i == iref ) then
+      model(i)%similarity = 1.d0
     end if
   end do
 
@@ -109,6 +156,11 @@ program gcorrelation
   !
 
   call sort_by_similarity(nmodels,model)
+  i = 1
+  do while( reference /= model(i)%name ) 
+    i = i + 1
+  end do
+  iref = i
 
   !
   ! Write output file 
@@ -120,10 +172,18 @@ program gcorrelation
   write(10,"(a,a)") "# Input alignment log: ", trim(adjustl(compactlog))
   write(10,"(a,a)") "# Input gscore file: ", trim(adjustl(gscorefile))
   write(10,"(a,a)") "# Reference model: ", trim(adjustl(reference))
+  write(10,"(a,f12.5)") "# G-score of reference model: ", model(iref)%gscore
+  if ( score_type == 1 ) write(10,"(a)") "# Score type: GDT_TS"
+  if ( score_type == 2 ) write(10,"(a)") "# Score type: TM-score"
+  if ( score_type == 3 ) then
+    write(10,"(a)") "# Score type: Contact-correlation"
+    write(10,"(a,a)") "# Normalization by: ", trim(adjustl(normtype))
+  end if
+  write(10,"(a,f12.5)") "# Score cutoff: ", cutoff
   write(10,"(a)") "#"
   write(10,"(a)") "#    G-score    Similarity  Model"
   do i = 1, nmodels
-    if ( model(i)%name == reference) cycle
+    if ( i == iref ) cycle
     write(10,"(f12.5,tr2,f12.5,tr2,a)") model(i)%gscore, model(i)%similarity, &
                                         trim(adjustl(model(i)%name))
   end do

@@ -18,16 +18,19 @@ program qmatrix
   use types
   use file_operations
   implicit none
+  type contact_list
+    integer, allocatable :: i(:), j(:)
+  end type
   integer :: narg
-  integer :: ioerr, nmodels, npairs, fdomain, ldomain, ndomain, &
-             ires, iat, jat, nres, imodel, jmodel, ipair, i, icount
-  integer, allocatable :: ncontacts(:), fcontact(:), nextcontact(:,:)
+  integer :: ioerr, nmodels, fdomain, ldomain, ndomain, &
+             ires, iat, jat, nres, imodel, jmodel, ipair, i, icount, ic, jc, &
+             maxcontacts, npairs
   real :: dcontact, contact_square, d 
-  real, allocatable :: x(:,:), correlation(:,:)
+  real, allocatable :: x(:,:,:), correlation(:)
   character(len=200) :: pdblist, record, output, format
-  logical, allocatable :: contact(:,:)
+  logical, allocatable :: hascontact(:)
   type(model_type), allocatable :: model(:)
-
+  type(contact_list), allocatable :: contact(:)
 
   write(*,"(a)") "#" 
   write(*,"(a)") "# Contact correlation" 
@@ -57,6 +60,21 @@ program qmatrix
     ldomain = 0
   end if
   if ( fdomain == 0 .and. ldomain == 0 ) ndomain = 0
+
+  ! Just check if output file exists and if the user wants to overwrite it
+
+  open(10,file=output,status="new",iostat=ioerr)
+  if ( ioerr /= 0 ) then
+    write(*,"(a,a,a)",advance="no") &
+         '# Warning: File ', trim(adjustl(output)), ' exists. Overwrite it? (Y/N) '
+    read(*,*) record
+    if ( record /= "Y" ) then
+      close(10)
+      write(*,*) ' Quitting ... '
+      stop
+    end if
+  end if
+  close(10)
 
   ! Get number of PDB files and number of residues from input file
 
@@ -94,10 +112,6 @@ program qmatrix
   write(*,"(a,i8)") '# Number of residues in structure: ', nres
   write(*,"(a,i8)") '# First residue in domain: ', fdomain
   write(*,"(a,i8)") '# Last residue in domain: ', ldomain
-  ndomain = ldomain-fdomain+1
-  npairs = ndomain*(ndomain-1)/2
-  write(*,"(a,i8)") '# Number of residues in domain: ', ndomain
-  allocate(x(ndomain,3),contact(nmodels,npairs))
 
   ! Allocate model vector to sort names
 
@@ -120,9 +134,13 @@ program qmatrix
 
   call sort_by_name(nmodels,model)
 
-  ! Computing contact vectors
+  ndomain = ldomain-fdomain+1
+  write(*,"(a,i8)") '# Number of residues in domain: ', ndomain
+  allocate(x(nmodels,ndomain,3))
 
-  write(*,"(a)") "# Computing the contact vector for all structures ... "
+  ! Reading the coordinates to memory
+
+  write(*,"(a)") "# Reading coordinates ... "
   do imodel = 1, nmodels
     call progress(imodel,1,nmodels)
 
@@ -145,19 +163,19 @@ program qmatrix
         end if
         if ( ires >= fdomain .and. ires <= ldomain ) then
           iat = iat + 1
-          read(record(31:38),*,iostat=ioerr) x(iat,1)
+          read(record(31:38),*,iostat=ioerr) x(imodel,iat,1)
           if ( ioerr /= 0 ) then
             write(*,*) ' ERROR: Failed reading atom coordintes in file: ', &
                         trim(adjustl(model(imodel)%name))
             close(20) ; stop
           end if
-          read(record(39:46),*,iostat=ioerr) x(iat,2)
+          read(record(39:46),*,iostat=ioerr) x(imodel,iat,2)
           if ( ioerr /= 0 ) then
             write(*,*) ' ERROR: Failed reading atom coordintes in file: ', &
                         trim(adjustl(model(imodel)%name))
             close(20) ; stop
           end if
-          read(record(47:54),*,iostat=ioerr) x(iat,3)
+          read(record(47:54),*,iostat=ioerr) x(imodel,iat,3)
           if ( ioerr /= 0 ) then
             write(*,*) ' ERROR: Failed reading atom coordintes in file: ', &
                         trim(adjustl(model(imodel)%name))
@@ -167,101 +185,121 @@ program qmatrix
       end if
     end do
     close(20)
+  end do
 
-    ! Computing the contact logical vectors
+  ! Computing the number of contacts and maximum number of contacts in a model
 
-    ipair = 0
+  write(*,"(a)") "# Computing number of contacts in each model ... "
+  maxcontacts = 0
+  do imodel = 1, nmodels
+    call progress(imodel,1,nmodels)
+    icount = 0
     do iat = 1, ndomain - 1
-      do jat = iat + 1, ndomain
+      do jat = iat + 3, ndomain
         ipair = ipair + 1
-        d = (x(iat,1) - x(jat,1))**2 + &
-            (x(iat,2) - x(jat,2))**2 + &
-            (x(iat,3) - x(jat,3))**2
+        d = (x(imodel,iat,1) - x(imodel,jat,1))**2 + &
+            (x(imodel,iat,2) - x(imodel,jat,2))**2 + &
+            (x(imodel,iat,3) - x(imodel,jat,3))**2
+        if ( d <= contact_square ) icount = icount + 1
+      end do
+    end do
+    model(imodel)%ncontacts = icount
+    maxcontacts = max(icount,maxcontacts)
+  end do
+
+  write(*,"(a,i10)") "# Maximum number of contacts in a structure: ", maxcontacts
+  write(*,"(a,f12.5,a)") "# Estimated memory requirement: ",&
+                          8*(real(maxcontacts)/1024)*real(nmodels/1024)/1024," GB"
+
+  allocate(contact(nmodels))
+  do imodel = 1, nmodels
+    allocate(contact(imodel)%i(model(imodel)%ncontacts),&
+             contact(imodel)%j(model(imodel)%ncontacts))
+  end do
+
+  ! Compute contact matrices for each structure and store
+  
+  write(*,"(a)") "# Computing the contact matrix for each model ... "
+  do imodel = 1, nmodels
+    call progress(imodel,1,nmodels)
+    ic = 0
+    do iat = 1, ndomain - 1
+      do jat = iat + 3, ndomain
+        ipair = ipair + 1
+        d = (x(imodel,iat,1) - x(imodel,jat,1))**2 + &
+            (x(imodel,iat,2) - x(imodel,jat,2))**2 + &
+            (x(imodel,iat,3) - x(imodel,jat,3))**2
         if ( d <= contact_square ) then
-          contact(imodel,ipair) = .true.
-        else
-          contact(imodel,ipair) = .false.
+          ic = ic + 1
+          contact(imodel)%i(ic) = iat
+          contact(imodel)%j(ic) = jat
         end if
       end do
     end do
-
   end do
+  deallocate(x)
 
-  ! Setting up the linked vectors for running only on existing contacts
+  ! Write output file preamble 
 
-  write(*,"(a)") "# Setting up linked contact vectors ... "
-  allocate(fcontact(nmodels),nextcontact(nmodels,npairs),ncontacts(nmodels))
+  open(10,file=output,iostat=ioerr)
+  write(10,"(a)") '# This a compact contact-correlation file'
+  write(10,"(a)") '# Computed with Qcorrelation'
+  write(10,"(a,a)") '# PDB list: ', trim(adjustl(pdblist))
+  write(10,"(a,f12.5)") '# Score type: Contact-correlation - dcontact = ', dcontact
+  write(10,*) nmodels, maxcontacts
   do imodel = 1, nmodels
-    call progress(imodel,1,nmodels)
-    ncontacts(imodel) = 0
-    fcontact(imodel) = 0
-    do ipair = 1, npairs
-      if ( contact(imodel,ipair) ) then
-        nextcontact(imodel,ipair) = fcontact(imodel)
-        fcontact(imodel) = ipair
-        ncontacts(imodel) = ncontacts(imodel) + 1
-      end if
-    end do
+    write(10,*) imodel, trim(adjustl(basename(model(imodel)%name))), model(imodel)%ncontacts
   end do
-  
-  write(*,"(a)") "# Computing the correlation matrix ... "
-  allocate(correlation(nmodels,nmodels))
+  write(format,*) nmodels
+  format = "("//trim(adjustl(format))//"(tr1,f10.3))"
+
+  ! Actually computing the correlation matrix and writting output, by line
+
+  write(*,"(a)") "# Computing the correlation matrix and writting output ... "
+
   i = 0
+  npairs = ndomain*(ndomain-1)/2
+  allocate(hascontact(npairs))
+  allocate(correlation(nmodels))
   do imodel = 1, nmodels - 1
+
+    ! Compute logical contact vector for imodel
+
+    do ic = 1, npairs
+      hascontact(ic) = .false.
+    end do
+    do ic = 1, model(imodel)%ncontacts
+      iat = contact(imodel)%i(ic)
+      jat = contact(imodel)%j(ic)
+      ! Counting for j > i, without the diagonal, thus the lower triangle
+      ! and the diagonal must be discounted from the list -(iat*(iat-1)/2+iat)=-(iat*(iat+1)/2)
+      jc = (iat-1)*ndomain+jat - iat*(iat+1)/2
+      hascontact(jc) = .true.
+    end do
+
+    ! Check the number of contacts present in both models
+      
     do jmodel = imodel + 1, nmodels
       i = i + 1
       call progress(i,1,nmodels*(nmodels-1)/2)
       icount = 0
-      if ( ncontacts(imodel) <= ncontacts(jmodel) ) then
-        ipair = fcontact(imodel)
-        do while( ipair > 0 ) 
-          if ( contact(imodel,ipair) .and. contact(jmodel,ipair) ) icount = icount + 1
-          ipair = nextcontact(imodel,ipair)
-        end do
-      else
-        ipair = fcontact(jmodel)
-        do while( ipair > 0 ) 
-          if ( contact(imodel,ipair) .and. contact(jmodel,ipair) ) icount = icount + 1
-          ipair = nextcontact(jmodel,ipair)
-        end do
-      end if
-      correlation(imodel,jmodel) = real(icount)
-      correlation(jmodel,imodel) = real(icount)
+      do ic = 1, model(jmodel)%ncontacts
+        iat = contact(jmodel)%i(ic)
+        jat = contact(jmodel)%j(ic)
+        jc = (iat-1)*ndomain+jat - iat*(iat+1)/2 
+        if ( hascontact(jc) ) then
+          icount = icount + 1
+        end if
+        correlation(jmodel) = icount
+      end do
     end do
-  end do
 
-  !
-  ! Writting results
-  !
+    ! Write this line of the output file
 
-  ! Compact log file:
-
-  write(*,"(a)") "# Writting output file ... "
-  open(10,file=output,status="new",iostat=ioerr)
-  if ( ioerr /= 0 ) then
-    write(*,*) ' Warning: File ', trim(adjustl(output)), ' exists. Overwrite it? (Y/N) '
-    read(*,*) record
-    if ( record == "Y" ) then
-      open(10,file=output,iostat=ioerr)
-    else
-      write(*,*) ' Quitting ... '
-      stop
-    end if
-  end if
-  write(10,"(a)") '# This a compact contact-correlation file'
-  write(10,"(a)") '# Computed with Qcorrelation'
-  write(10,"(a,a)") '# PDB list: ', trim(adjustl(pdblist))
-  write(10,"(a,a)") '# Score type: Contact-correlation'
-  write(10,*) nmodels
-  do imodel = 1, nmodels
-    write(10,*) imodel, trim(adjustl(basename(model(imodel)%name)))
-  end do
-  write(format,*) nmodels
-  format = "("//trim(adjustl(format))//"(tr1,f8.3))"
-  do imodel = 1, nmodels - 1
-    write(10,format) (correlation(imodel,jmodel),jmodel=imodel+1,nmodels)
+    write(10,format) (correlation(jmodel),jmodel=imodel+1,nmodels)
   end do
   close(10)
+  
   write(*,"(a)") "#"
   write(*,"(3a)") "# Output file: ", trim(adjustl(output)), " written."
   write(*,"(a)") "#"

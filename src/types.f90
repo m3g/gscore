@@ -4,6 +4,7 @@ module types
     character(len=200) :: name
     character(len=200) :: file
     integer :: index
+    integer :: ncontacts
     double precision :: gscore
     double precision :: similarity
     double precision :: dgscore
