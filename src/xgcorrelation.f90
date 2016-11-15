@@ -20,8 +20,9 @@ program xgcorrelation
   use file_operations
   implicit none
   integer :: i, i1, imodel
-  integer :: narg, ioerr, nmodels, model_index, score_type
-  double precision :: gscore, dummy, gdt_read, tmscore_read
+  integer :: narg, ioerr, nmodels, model_index, score_type, ialign_score
+  double precision :: gscore, align_score(7)
+  character(len=10) :: charscore
   character(len=200) :: alignlog, gscorefile, record, name
   character(len=200) :: output, file1, file2, pdblist
   logical :: error
@@ -39,14 +40,23 @@ program xgcorrelation
   write(*,"(a)") "#" 
 
   narg = iargc()
-  if ( narg /= 4 ) then
-    write(*,*) ' ERROR: Run with: ./xgcorrelation [reference align log] [pdb list] [gscore output] [output]'
+  if ( narg /= 4 .and. narg /= 5 ) then
+    write(*,*) ' ERROR: Run with: ./xgcorrelation [reference align log] [pdb list] [gscore output] [output] [read score]'
+    write(*,*) '        [read score] is an optional parameter: GDT_TS, TM-score, RMSD or GDT_HA '
     stop
   end if
   call getarg(1,alignlog)
   call getarg(2,pdblist)
   call getarg(3,gscorefile)
   call getarg(4,output)
+  ialign_score = 0
+  if ( narg == 5 ) then
+    call getarg(5,charscore)
+    if ( charscore == "TM-score" ) ialign_score = 1
+    if ( charscore == "RMSD" ) ialign_score = 3
+    if ( charscore == "GDT_TS" ) ialign_score = 6
+    if ( charscore == "GDT_HA" ) ialign_score = 7
+  end if
 
   ! Print the input options
 
@@ -155,7 +165,7 @@ program xgcorrelation
     read(10,"(a200)",iostat=ioerr) record
     if ( ioerr /= 0 ) exit
     if ( comment(record) ) cycle
-    read(record,*,iostat=ioerr) file1, file2, tmscore_read, (dummy,i=1,4), gdt_read
+    read(record,*,iostat=ioerr) file1, file2, (align_score(i),i=1,7)
     i = i + 1
     if ( ioerr /= 0 ) then
       write(*,*) ' ERROR: Could not read data in alignment log file: ', trim(adjustl(alignlog))
@@ -165,14 +175,18 @@ program xgcorrelation
     file1 = basename(file1)
     i1 = model_index(file1,model,nmodels,error)
     if ( error ) cycle
-    if ( score_type == 1 ) then
-      model(i1)%similarity = gdt_read
-    end if
-    if ( score_type == 2 ) then
-      model(i1)%similarity = tmscore_read
-    end if
-    if ( score_type == 3 ) then
-      model(i1)%similarity = gdt_read
+    if ( ialign_score == 0 ) then
+      if ( score_type == 1 ) then 
+        model(i1)%similarity = align_score(6) ! GDT_TS
+      end if
+      if ( score_type == 2 ) then
+        model(i1)%similarity = align_score(1) ! TM-score
+      end if
+      if ( score_type == 3 ) then
+        model(i1)%similarity = align_score(6) ! GDT_TS
+      end if
+    else
+      model(i1)%similarity = align_score(ialign_score)
     end if
   end do
   close(10)
@@ -181,7 +195,18 @@ program xgcorrelation
   ! Sort models from greater to lower GDT
   !
 
+  ! If RMSD, invert values to sort
+  if ( ialign_score == 3 ) then
+    do i = 1, nmodels
+      model(i)%similarity = -1.d0*model(i)%similarity
+    end do
+  end if
   call sort_by_similarity(nmodels,model)
+  if ( ialign_score == 3 ) then
+    do i = 1, nmodels
+      model(i)%similarity = -1.d0*model(i)%similarity
+    end do
+  end if
   
   ! Write GDT output file
 
