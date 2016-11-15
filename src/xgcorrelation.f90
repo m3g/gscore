@@ -119,6 +119,10 @@ program xgcorrelation
         write(*,"(a)") '# G-scores computed from TM-score similarities.'
         score_type = 2
       end if
+      if ( index(record,"Contact-correlation") /= 0 ) then
+        write(*,"(a)") '# G-scores computed from Contact-correlation.'
+        score_type = 3
+      end if
     end if
     if ( comment(record) ) cycle
     i = i + 1
@@ -167,6 +171,9 @@ program xgcorrelation
     if ( score_type == 2 ) then
       model(i1)%similarity = tmscore_read
     end if
+    if ( score_type == 3 ) then
+      model(i1)%similarity = gdt_read
+    end if
   end do
   close(10)
 
@@ -190,6 +197,9 @@ program xgcorrelation
   end if
   if ( score_type == 2 ) then
     write(10,"(a)") "# Similarity score: TM-score"
+  end if
+  if ( score_type == 3 ) then
+    write(10,"(a)") "# Similarity score: GDT_TS"
   end if
   write(10,"(a)") "#"
   write(10,"(a)") "#    G-score    Similarity  Model"
