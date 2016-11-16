@@ -25,7 +25,7 @@ program compactlog
   double precision, allocatable :: gdt(:,:), tmscore(:,:)
   character(len=200) :: pdb_list, align_list, align_log, output, gdt_log, tm_log
   character(len=200) :: record, file1, file2, format
-  logical :: error
+  logical :: error, stop = .true.
   type(model_type), allocatable :: model(:)
 
   write(*,"(a)") "#" 
@@ -163,10 +163,10 @@ program compactlog
         stop
       end if
       file1 = basename(file1)
-      i1 = model_index(file1,model,nmodels,error)
+      i1 = model_index(file1,model,nmodels,stop)
       if ( error ) cycle
       file2 = basename(file2)
-      i2 = model_index(file2,model,nmodels,error)
+      i2 = model_index(file2,model,nmodels,stop)
       if ( error ) cycle
       if ( i2 > i1 ) then
         tmscore(i1,i2) = tmscore_read

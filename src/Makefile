@@ -24,6 +24,7 @@ BINARIES = $(BIN)/compactlog \
            $(BIN)/xgscore \
            $(BIN)/gcorrelation \
            $(BIN)/xgcorrelation \
+           $(BIN)/xcompare \
            $(BIN)/dgscore
 
 MODULES = types.o \
@@ -142,6 +143,19 @@ $(BIN)/xgcorrelation : Makefile $(MODULES) xgcorrelation.o \
                     progress_bar.o \
                     $(FLAGS)
 
+$(BIN)/xcompare : Makefile $(MODULES) xcompare.o \
+                                      model_index.o \
+                                      sort.o \
+                                      title.o \
+                                      progress_bar.o
+	$(FORTRAN) -o $(BIN)/xcompare $(MODULES) \
+                    xcompare.o \
+                    model_index.o \
+                    sort.o \
+                    title.o \
+                    progress_bar.o \
+                    $(FLAGS)
+
 $(BIN)/dgscore : Makefile $(MODULES) dgscore.o \
                                     model_index.o \
                                     sort.o \
@@ -179,6 +193,9 @@ gcorrelation.o : Makefile gcorrelation.f90
 
 xgcorrelation.o : Makefile xgcorrelation.f90 
 	$(FORTRAN) -c xgcorrelation.f90 $(FLAGS)
+
+xcompare.o : Makefile xcompare.f90 
+	$(FORTRAN) -c xcompare.f90 $(FLAGS)
 
 dgscore.o : Makefile dgscore.f90 
 	$(FORTRAN) -c dgscore.f90 $(FLAGS)

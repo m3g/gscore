@@ -21,7 +21,7 @@ program gcorrelation
   integer :: narg, ioerr, model_index, model_index2
   double precision :: gscore, cutoff
   character(len=200) :: gscorefile, record, output, reference, name, normtype
-  logical :: error
+  logical :: error, stop = .true.
 
   write(*,"(a)") "#" 
   write(*,"(a)") "# G-score correlation calculator " 
@@ -103,7 +103,7 @@ program gcorrelation
       write(*,*) '       ', trim(adjustl(record))
       stop
     end if
-    imodel = model_index(name,model,nmodels,error)
+    imodel = model_index(name,model,nmodels,stop)
     if ( error ) then
       write(*,*) ' ERROR: Model listed in G-score file is not in align log file. '
       write(*,*) '        Model name: ', trim(adjustl(name))
@@ -115,7 +115,7 @@ program gcorrelation
 
   ! Checking which is the index of the reference model 
 
-  iref = model_index(reference,model,nmodels,error)
+  iref = model_index(reference,model,nmodels,stop)
 
   !
   ! Now check the similarity of each model to the reference model

@@ -16,6 +16,7 @@ program dgscore
   integer :: narg, ioerr, nmodels, imodel
   double precision :: gscore
   character(len=200) file1, file2, output, record, name
+  logical :: stop = .true.
   type(model_type), allocatable :: model(:)
 
   write(*,"(a)") "#"
@@ -89,7 +90,7 @@ program dgscore
     if ( comment(record) ) cycle
     read(record,*,iostat=ioerr) gscore, name
     if ( ioerr /= 0 ) cycle
-    imodel = model_index(name,model,nmodels,error)
+    imodel = model_index(name,model,nmodels,stop)
     model(imodel)%dgscore = model(imodel)%gscore - gscore
   end do
   close(20)
