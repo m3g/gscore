@@ -7,7 +7,7 @@ package=gscore
 
 # HTML file containing download list:
 
-downloads=~/public_html/gscore/download.html
+downloads=~/public_html/gscore/download.shtml
 
 # GIT URL:
 
