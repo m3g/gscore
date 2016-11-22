@@ -18,7 +18,7 @@ program xcompare
   integer :: name(2), col(2), nmodels(2), imodel, jmodel
   real :: value
   character(len=200) :: file(2), record, string, output, modelname
-  logical :: error, stop
+  logical :: stop
   type(model_type), allocatable :: model1(:), model2(:)
 
 
