@@ -25,7 +25,7 @@ program compactlog
   double precision, allocatable :: gdt(:,:), tmscore(:,:)
   character(len=200) :: pdb_list, align_list, align_log, output, gdt_log, tm_log
   character(len=200) :: record, file1, file2, format
-  logical :: error, stop = .true.
+  logical :: stop = .true.
   type(model_type), allocatable :: model(:)
 
   write(*,"(a)") "#" 
@@ -58,11 +58,8 @@ program compactlog
   ! Names of output files for GDT_TS and TM-score files.
 
   call getarg(3,output)
-  gdt_log = trim(adjustl(basename(output)))//"-GDT_TS"&
-            //trim(adjustl(output(length(basename(output))+1:length(output))))
-  tm_log = trim(adjustl(basename(output)))//"-TMscore"&
-           //trim(adjustl(output(length(basename(output))+1:length(output))))
-
+  gdt_log = trim(adjustl(remove_extension(basename(output))))//"-GDT_TS."//trim(adjustl(file_extension(output)))
+  tm_log = trim(adjustl(remove_extension(basename(output))))//"-TMscore."//trim(adjustl(file_extension(output)))
   call checkfile(gdt_log)
   call checkfile(tm_log)
 
@@ -164,10 +161,8 @@ program compactlog
       end if
       file1 = basename(file1)
       i1 = model_index(file1,model,nmodels,stop)
-      if ( error ) cycle
       file2 = basename(file2)
       i2 = model_index(file2,model,nmodels,stop)
-      if ( error ) cycle
       if ( i2 > i1 ) then
         tmscore(i1,i2) = tmscore_read
         gdt(i1,i2) = gdt_read

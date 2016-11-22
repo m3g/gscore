@@ -18,10 +18,10 @@ program gcorrelation
   use compactlog_data
   implicit none
   integer :: i, iref, imodel, normalization
-  integer :: narg, ioerr, model_index, model_index2
+  integer :: narg, ioerr, model_index
   double precision :: gscore, cutoff
   character(len=200) :: gscorefile, record, output, reference, name, normtype
-  logical :: error, stop = .true.
+  logical :: stop = .true.
 
   write(*,"(a)") "#" 
   write(*,"(a)") "# G-score correlation calculator " 
@@ -104,11 +104,6 @@ program gcorrelation
       stop
     end if
     imodel = model_index(name,model,nmodels,stop)
-    if ( error ) then
-      write(*,*) ' ERROR: Model listed in G-score file is not in align log file. '
-      write(*,*) '        Model name: ', trim(adjustl(name))
-      stop
-    end if
     model(imodel)%gscore = gscore
   end do
   close(10)

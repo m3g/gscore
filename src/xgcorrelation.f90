@@ -25,7 +25,7 @@ program xgcorrelation
   character(len=10) :: charscore
   character(len=200) :: alignlog, gscorefile, record, name
   character(len=200) :: output, file1, file2, pdblist
-  logical :: error, stop = .true.
+  logical :: stop = .true.
   type(model_type), allocatable :: model(:)
 
   write(*,"(a)") "#" 
@@ -143,11 +143,6 @@ program xgcorrelation
       stop
     end if
     imodel = model_index(name,model,nmodels,stop)
-    if ( error ) then
-      write(*,*) ' ERROR: Model listed in G-score file is not in align log file. '
-      write(*,*) '        Model name: ', trim(adjustl(name))
-      stop
-    end if
     model(imodel)%gscore = gscore
   end do
   close(10)
@@ -174,7 +169,6 @@ program xgcorrelation
     end if
     file1 = basename(file1)
     i1 = model_index(file1,model,nmodels,stop)
-    if ( error ) cycle
     if ( ialign_score == 0 ) then
       if ( score_type == 1 ) then 
         model(i1)%similarity = align_score(6) ! GDT_TS

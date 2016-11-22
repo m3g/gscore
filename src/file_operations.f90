@@ -74,6 +74,32 @@ module file_operations
     end function remove_path
     
     !
+    ! Function that return only the extension of the file
+    !
+    
+    character(len=200) function file_extension(filename)
+     
+      implicit none
+      integer :: i, idot
+      character(len=200) :: filename
+    
+      i = length(filename)
+      idot = 1
+      do while(i > 0)
+        if ( filename(i:i) == "." ) then
+          idot = i
+          exit
+        end if
+        i = i - 1
+      end do
+      file_extension(1:length(filename)-idot) = filename(idot+1:length(filename))
+      do i = length(filename)-idot+1, 200
+        file_extension(i:i) = achar(32)
+      end do
+    
+    end function file_extension
+
+    !
     ! Function that determines the length of a string
     !
     
