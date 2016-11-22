@@ -12,27 +12,66 @@ module file_operations
     !
     
     character(len=200) function basename(filename)
-    
-      integer :: i
+     
+      implicit none
       character(len=200) :: filename
     
-      basename = trim(adjustl(filename))
-      i = length(basename)
+      basename = remove_path(filename)
+      basename = remove_extension(basename)
+    
+    end function basename
+    
+    !
+    ! Function that removes the extension of a file name
+    !
+    
+    character(len=200) function remove_extension(filename)
+     
+      implicit none
+      integer :: i, idot
+      character(len=200) :: filename
+    
+      remove_extension = filename
+      i = length(remove_extension)
       idot = i+1
-      do while(basename(i:i) /= "/")
-        if ( basename(i:i) == "." ) then
+      do while(i > 0)
+        if ( remove_extension(i:i) == "." ) then
           idot = i
         end if
+        i = i - 1
+      end do
+      i = i + 1
+      remove_extension = remove_extension(1:idot-1)
+      do i = idot, 200
+        remove_extension(i:i) = achar(32)
+      end do
+    
+    end function remove_extension
+
+    !
+    ! Function that removes the path from a file name
+    !
+    
+    character(len=200) function remove_path(filename)
+    
+      implicit none
+      integer :: i, ilength
+      character(len=200) :: filename
+    
+      remove_path = trim(adjustl(filename))
+      ilength = length(remove_path)
+      i = ilength
+      do while(remove_path(i:i) /= "/")
         i = i - 1
         if ( i == 0 ) exit
       end do
       i = i + 1
-      basename = basename(i:idot-1)
-      do i = idot, 200
-        basename(i:i) = achar(32)
+      remove_path(1:ilength-i+1) = remove_path(i:ilength)
+      do i = ilength-i+1, 200
+        remove_path(i:i) = achar(32)
       end do
     
-    end function basename
+    end function remove_path
     
     !
     ! Function that determines the length of a string
