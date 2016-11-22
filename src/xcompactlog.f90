@@ -25,7 +25,7 @@ program xcompactlog
   character(len=200) :: pdb_list1, pdb_list2
   character(len=200) :: align_list, align_log, gdt_log, tm_log, output
   character(len=200) :: record, file1, file2, format
-  logical :: error, stop = .true.
+  logical :: stop = .true.
   type(model_type), allocatable :: model1(:), model2(:)
 
   write(*,"(a)") "#" 
@@ -215,10 +215,8 @@ program xcompactlog
       end if
       file1 = basename(file1)
       i1 = model_index(file1,model1,nmodels1,stop)
-      if ( error ) cycle
       file2 = basename(file2)
       i2 = model_index(file2,model2,nmodels2,stop)
-      if ( error ) cycle
       tmscore(i1,i2) = tmscore_read
       gdt(i1,i2) = gdt_read
     end do
