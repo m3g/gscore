@@ -8,6 +8,7 @@ module types
     double precision :: gscore
     double precision :: similarity
     double precision :: dgscore
+    logical, allocatable :: constraint(:)
   end type model_type
 
 end module types 

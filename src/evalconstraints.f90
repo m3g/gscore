@@ -17,31 +17,29 @@
 !
 program evalconstraints
 
-  use ioformat 
   use types
   use file_operations
-  use progress_bar
   implicit none
-  type( constraint_type ) 
+  type constraint_type
     integer :: i, j
     real :: d
   end type
-  integer :: i, j, iconst, imodel, ires, model_index
+  integer :: i, j, iconst, imodel, ires, model_index, nsatisfied, nconstraints, nres
   integer :: nargs, nmodels, ioerr
-  real :: dij, gscore
-  character(len=200) :: record, name, output, gscorefile, pdblist, constraintsfile 
+  real :: dij, gscore, d
+  character(len=200) :: record, name, output, gscorefile, pdblist, constraintsfile, &
+                        correlationout, format
   logical :: stop = .true.
-  real, allocatable :: x(:,:)
-  logical, allocatable :: cmodel(:), correlation(:,:)
-  type(modeldata), allocatable :: model(:)
+  integer, allocatable :: satisfied(:)
+  real, allocatable :: x(:,:), correlation(:,:)
+  type(model_type), allocatable :: model(:)
   type(constraint_type), allocatable :: constraint(:)
 
   ! Print title
 
   call title()
   write(*,"(a)") '# EVALCONSTRAINTS: Evaluate the models from the constraint set. '
-  write(*,*)
-  write(*,dashes)
+  write(*,"(a)") '#'
 
   ! Read list of log files from the command line
 
@@ -55,12 +53,8 @@ program evalconstraints
     write(*,*) '        constraints.dat is the file containing the set of constraints. '
     write(*,*) '        output.dat is the name of the output file to be created. '
     write(*,*)
-    write(*,*) ' If the score list is not a LovoAlign log file, -c[int] indicates the column of the '
-    write(*,*) ' list containing the score. '
-    write(*,*)
     write(*,*) ' More details at: http://leandro.iqm.unicamp/gscore '
     write(*,*)
-    write(*,hashes)
     stop
   end if
 
@@ -127,7 +121,7 @@ program evalconstraints
   ! Read number of constraints from contraint file
 
   write(*,"(a)") "# Reading constraint file ... "
-  open(10,file=constraintfile,action='read',status='old')
+  open(10,file=constraintsfile,action='read',status='old')
   nconstraints = 0
   do
     read(10,"(a200)",iostat=ioerr) record
@@ -137,7 +131,10 @@ program evalconstraints
     if ( ioerr /= 0 ) nconstraints = nconstraints + 1 
   end do
   write(*,"(a,i8)") '# Number o constraints: ', nconstraints
-  allocate(constraint(nconstraints),cmodel(nconstraints))
+  allocate(constraint(nconstraints))
+  do imodel = 1, nmodels
+    allocate(model(imodel)%constraint(nconstraints))
+  end do
  
   ! Read constraints
 
@@ -170,7 +167,7 @@ program evalconstraints
     ! Read coordinates of atoms that belong to constraints in this model
 
     open(10,file=model(imodel)%file,action='read',status='old',iostat=ioerr) 
-    if ( ierr /= 0 ) then
+    if ( ioerr /= 0 ) then
       write(*,*) ' ERROR: Could not open PDB file: ', trim(adjustl(model(imodel)%file))
       stop
     end if
@@ -195,7 +192,7 @@ program evalconstraints
     ! Compute logical contact vector for this model
 
     model(imodel)%ncontacts = 0
-    do iconst = 1, ncontacts
+    do iconst = 1, nconstraints
       i = constraint(iconst)%i
       j = constraint(iconst)%j
       d = constraint(iconst)%d
@@ -203,10 +200,10 @@ program evalconstraints
             ( x(i,2) - x(j,2) )**2 + &
             ( x(i,3) - x(j,3) )**2
       if ( dij <= d ) then
-        cmodel(iconst) = .true.
+        model(imodel)%constraint(iconst) = .true.
         model(imodel)%ncontacts = model(imodel)%ncontacts + 1
       else
-        cmodel(iconst) = .false.
+        model(imodel)%constraint(iconst) = .false.
       end if
     end do
   end do
@@ -214,79 +211,118 @@ program evalconstraints
   ! Computing constraint correlation matrix
 
   allocate(correlation(nconstraints,nconstraints))
+  do i = 1, nconstraints
+    correlation(i,j) = 1.
+  end do
+  do i = 1, nconstraints - 1
+    do j = i + 1,  nconstraints
+      correlation(i,j) = 0.
+    end do
+  end do
   do imodel = 1, nmodels - 1
-    do j = imodel + 1, nmodels
-      correlation(i,j) = 0
-      if ( cmodel(i) .and. cmodel(j) ) then
-        correlation(i,j) = correlation(i,j) + 1
-      else ( ( cmodel(i) .and. .not. cmodel(j) ) .or. &
-             ( .not. cmodel(i) .and. cmodel(j) ) ) then
-        correlation(i,j) = correlation(i,j) - 1
-      end if
+    do i = 1, nconstraints - 1
+      do j = i + 1, nconstraints
+        if ( model(imodel)%constraint(i) .and. model(imodel)%constraint(j) ) then
+          correlation(i,j) = correlation(i,j) + 1
+        else if( ( model(imodel)%constraint(i) .and. .not. model(imodel)%constraint(j) ) .or. &
+                 ( .not. model(imodel)%constraint(i) .and. model(imodel)%constraint(j) ) ) then
+          correlation(i,j) = correlation(i,j) - 1
+        end if
+      end do
+    end do
+  end do
+  do i = 1, nconstraints - 1
+    do j = i + 1, nconstraints
+      correlation(i,j) = correlation(i,j) / nmodels
+      correlation(j,i) = correlation(i,j)
     end do
   end do
 
-
   !
-  ! Write output file
+  ! Write output files
   ! 
 
-  write(*,*) ' Writing output file ... '
+  correlationout = trim(adjustl(remove_extension(output)))//"_correlation."//&
+                   &trim(adjustl(file_extension(output)))
+  output = trim(adjustl(remove_extension(output)))//"_models."//&
+           &trim(adjustl(file_extension(output)))
+
+  ! Write constraint correlation output file
+ 
+  write(*,"(a,a)") "# Writting constraint correlation file: ", trim(adjustl(correlationout))
+  open(10,file=correlationout,iostat=ioerr)
+  if ( ioerr /= 0 ) then 
+    write(*,*) ' ERROR: Could not open output file: ', trim(adjustl(output))
+    stop
+  end if
+  write(format,"(a,i8,a)") "(",nconstraints,"(tr1,f5.2) )"
+  do i = 1, nconstraints
+    write(10,format) (correlation(i,j),j=1,nconstraints)
+  end do
+  close(10)
+
+  ! Write file containing list of of models with constraint analysis  
+
+  ! Ordering models by G-score
+
+  call sort_by_gscore(model,nmodels)
+
+  write(*,*) ' Writing constraint analysis file : ', trim(adjustl(output))
   open(10,file=output,iostat=ioerr)
   if ( ioerr /= 0 ) then 
     write(*,*) ' ERROR: Could not open output file: ', trim(adjustl(output))
     stop
   end if
-  
-  write(10,"(a)") "# TopoLink" 
+  write(10,"(a)") "# G-score"
   write(10,"(a)") "#"
-  write(10,"(a)") "# EvalModels output file. " 
+  write(10,"(a)") "# EvalConstraints output file. "
   write(10,"(a)") "#"
-  write(10,"(a,a)") "# Log file list: ", trim(adjustl(loglist))
-  write(10,"(a,a)") "# Score (possibly LovoAlign log) file: ", trim(adjustl(scorelist))
+  write(10,"(a,a)") "# PDB list: ", trim(adjustl(pdblist))
+  write(10,"(a,a)") "# G-score file: ", trim(adjustl(gscorefile))
+  write(10,"(a,a)") "# Constraints file: ", trim(adjustl(constraintsfile))
   write(10,"(a,i8)") "# Number of models ", nmodels
+  write(10,"(a,i8)") "# Number of constraints: ", nconstraints
   write(10,"(a)") "#"
-  write(10,"(a,i5,a)") "# Score: Model quality score, obtained from column ", scorecol,&
-                       " of the score file. " 
-  write(10,"(a)") "#"
-  write(10,"(a)") "# RESULT0: Number of consistent observations. "
-  write(10,"(a)") "# RESULT1: Number of topological distances consistent with all observations. "
-  write(10,"(a)") "# RESULT2: Number of topological distances NOT consistent with observations. "
-  write(10,"(a)") "# RESULT3: Number of missing links in observations. "
-  write(10,"(a)") "# RESULT4: Number of distances with min and max bounds that are consistent."
-  write(10,"(a)") "# RESULT5: Sum of the scores of observed links in all observations. "
-  write(10,"(a)") "# RESULT6: Likelyhood of the structural model, based on observations. "
-  write(10,"(a)") "#"
-  write(10,"(a)") "# More details at: http://leandro.iqm.unicamp.br/topolink"
-  write(10,"(a)") "#"
-  write(10,"(a)") "#      Score   RESULT0   RESULT1   RESULT2   RESULT3   RESULT4       RESULT5       RESULT6  MODEL"
-  do imodel = 1, nmodels
-    call progress(imodel,1,nmodels)
-    write(10,"( f12.5,5(tr2,i8),tr2,f12.5,tr2,e12.5,tr2,a )") &
-                model(imodel)%score, &
-                model(imodel)%nobscons, &
-                model(imodel)%ntopcons, &
-                model(imodel)%ntopnot, &
-                model(imodel)%nmiss, &
-                model(imodel)%nminmax, &
-                model(imodel)%sumscores, &
-                model(imodel)%likely,&
-                trim(adjustl(model(imodel)%name))
+  write(10,"(a)") "# Constraint list: "
+  do i = 1, nconstraints
+    write(10,"(a,i5,2(tr1,i5)tr1,f8.3)") "# ", i, constraint(i)%i, constraint(i)%j, constraint(i)%d
   end do
-
+  write(10,"(a)") "#"
+  write(10,"(a)") "# Nmodel: Number of constraints satisfied by this model. "
+  write(10,"(a)") "# RelatP: Relative probability of this model (G-score ratio to best model)."
+  write(10,"(a)") "# DeltaG: RelatP converted to DeltaG (kcal/mol)."
+  write(10,"(a)") "# Ntot: Total number of constraints satisfied by the ensemble up to this model."
+  write(10,"(a)") "# Next: constraint indexes according to list above."
+  write(10,"(a)") "#"
+  write(record,*) "(a,",nconstraints,"(tr1,i3))"
+  write(10,record) "#             Model  Nmodel     RelatP       DeltaG  Ntot",(i,i=1,nconstraints)
+  write(format,*) "(i8,tr1,a,tr1,i5,2(tr1,f12.5),tr1,i5,",nconstraints,"(tr1,i3))"
+  nsatisfied = 0
+  allocate(satisfied(nconstraints))
+  do i = 1, nconstraints
+    satisfied(i) = 0
+  end do
+  do imodel = 1, nmodels
+    do i = 1, nconstraints
+      if ( model(imodel)%constraint(i) ) then
+        if ( satisfied(i) == 0 ) then
+          nsatisfied = nsatisfied + 1
+          satisfied(i) = 1
+        end if
+      end if
+    end do
+    write(10,format) &
+             imodel, &
+             trim(adjustl(model(imodel)%name)),&
+             model(imodel)%ncontacts,&
+             model(imodel)%gscore / model(1)%gscore, &
+             -1.987*0.298*dlog(model(imodel)%gscore / model(1)%gscore), &
+             nsatisfied, &
+             (satisfied(i),i=1,nconstraints)
+  end do
   close(10)
-
-  write(*,*) ' Wrote output file: ', trim(adjustl(output))
-  write(*,*)
-  write(*,hashes)
+  write(*,"(a)") '#'
+  write(*,"(a)") '# END'
 
 end program evalconstraints
-
-
-
-
-
-
-
-
 
