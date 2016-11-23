@@ -266,10 +266,28 @@ program evalconstraints
   output = trim(adjustl(remove_extension(output)))//"_models."//&
            &trim(adjustl(file_extension(output)))
 
+  !
   ! Write constraint correlation output file
+  !
  
   write(*,"(a,a)") "# Writting constraint correlation file: ", trim(adjustl(correlationout))
   open(10,file=correlationout,iostat=ioerr)
+  write(10,"(a)") "# G-score"
+  write(10,"(a)") "#"
+  write(10,"(a)") "# EvalConstraints output file. "
+  write(10,"(a)") "#"
+  write(10,"(a)") "# Correlation matrix of constraints."
+  write(10,"(a)") "#"
+  write(10,"(a,a)") "# PDB list: ", trim(adjustl(pdblist))
+  write(10,"(a,a)") "# G-score file: ", trim(adjustl(gscorefile))
+  write(10,"(a,a)") "# Constraints file: ", trim(adjustl(constraintsfile))
+  write(10,"(a,i8)") "# Number of models ", nmodels
+  write(10,"(a,i8)") "# Number of constraints: ", nconstraints
+  write(10,"(a)") "#"
+  write(10,"(a)") "# Constraint list: "
+  do i = 1, nconstraints
+    write(10,"(a,i5,2(tr1,i5)tr1,f8.3)") "# C:", i, constraint(i)%i, constraint(i)%j, constraint(i)%d
+  end do
   if ( ioerr /= 0 ) then 
     write(*,*) ' ERROR: Could not open output file: ', trim(adjustl(output))
     stop
@@ -303,6 +321,10 @@ program evalconstraints
     end do
   end do
 
+  !
+  ! Write model list file
+  !
+
   write(*,"(a,a)") '# Writting constraint analysis file : ', trim(adjustl(output))
   open(10,file=output,iostat=ioerr)
   if ( ioerr /= 0 ) then 
@@ -312,6 +334,8 @@ program evalconstraints
   write(10,"(a)") "# G-score"
   write(10,"(a)") "#"
   write(10,"(a)") "# EvalConstraints output file. "
+  write(10,"(a)") "#"
+  write(10,"(a)") "# List of models and constraints satisfied."
   write(10,"(a)") "#"
   write(10,"(a,a)") "# PDB list: ", trim(adjustl(pdblist))
   write(10,"(a,a)") "# G-score file: ", trim(adjustl(gscorefile))
