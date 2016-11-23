@@ -23,20 +23,25 @@ program evalconstraints
   type constraint_type
     integer :: i, j
     real :: d
-  end type
+  end type constraint_type
   integer :: i, j, iconst, imodel, ires, model_index, nsatisfied, nconstraints, nres
-  integer :: nargs, nmodels, ioerr
-  real :: dij, gscore, d
+  integer :: nargs, nmodels, ioerr, max_name_size
+  real :: dij, d
+  double precision :: gscore
   character(len=200) :: record, name, output, gscorefile, pdblist, constraintsfile, &
                         correlationout, format
   logical :: stop = .true.
-  integer, allocatable :: satisfied(:)
+  integer, allocatable :: satisfied(:), ic(:)
   real, allocatable :: x(:,:), correlation(:,:)
+  logical, allocatable :: cmodel(:,:)
+  type(model_type) :: modeltemp
   type(model_type), allocatable :: model(:)
   type(constraint_type), allocatable :: constraint(:)
 
   ! Print title
 
+  write(*,"(a)") "#" 
+  write(*,"(a)") "# G-score calculator"
   call title()
   write(*,"(a)") '# EVALCONSTRAINTS: Evaluate the models from the constraint set. '
   write(*,"(a)") '#'
@@ -79,7 +84,11 @@ program evalconstraints
     if ( comment(record) ) cycle
     nmodels = nmodels + 1
   end do
-  write(*,"(a)") '# Number of models found in pdb list file: ', nmodels
+  write(*,"(a,i8)") '# Number of models found in pdb list file: ', nmodels
+  if ( nmodels == 0 ) then
+    write(*,*) ' ERROR: Could not read any model file name from: ', trim(adjustl(pdblist))
+    stop
+  end if
   allocate(model(nmodels))
 
   ! Read model file names
@@ -96,10 +105,17 @@ program evalconstraints
   end do
   close(10)
 
+  ! Obtain the largest name, to print output format nicely
+
+  max_name_size = 0
+  do imodel = 1, nmodels
+    max_name_size = max(max_name_size,length(model(imodel)%name))
+  end do
+
   ! Order models by name
 
   write(*,"(a)") "# Sorting models by name ... "
-  call sort_by_name(model,nmodels)
+  call sort_by_name(nmodels,model)
 
   ! Read the G-scores of the models
 
@@ -112,6 +128,7 @@ program evalconstraints
   do
     read(10,"(a200)",iostat=ioerr) record
     if ( ioerr /= 0 ) exit
+    if ( comment(record) ) cycle
     read(record,*,iostat=ioerr) gscore, name
     imodel = model_index(name,model,nmodels,stop)
     model(imodel)%gscore = gscore
@@ -128,13 +145,11 @@ program evalconstraints
     if ( ioerr /= 0 ) exit
     if ( comment(record) ) cycle
     read(record,*,iostat=ioerr) i, j, d
-    if ( ioerr /= 0 ) nconstraints = nconstraints + 1 
+    if ( ioerr /= 0 ) cycle
+    nconstraints = nconstraints + 1 
   end do
-  write(*,"(a,i8)") '# Number o constraints: ', nconstraints
-  allocate(constraint(nconstraints))
-  do imodel = 1, nmodels
-    allocate(model(imodel)%constraint(nconstraints))
-  end do
+  write(*,"(a,i8)") '# Number of constraints: ', nconstraints
+  allocate(constraint(nconstraints),cmodel(nmodels,nconstraints))
  
   ! Read constraints
 
@@ -146,11 +161,11 @@ program evalconstraints
     if ( ioerr /= 0 ) exit
     if ( comment(record) ) cycle
     read(record,*,iostat=ioerr) i, j, d
-    if ( ioerr /= 0 ) iconst = iconst + 1
+    if ( ioerr /= 0 ) cycle
+    iconst = iconst + 1
     constraint(iconst)%i = i
     constraint(iconst)%j = j
     constraint(iconst)%d = d
-    d = d**2
     nres = max(nres,i)
     nres = max(nres,j)
   end do
@@ -162,7 +177,7 @@ program evalconstraints
 
   write(*,"(a)") "# Reading model coordinates and computing contacts ... "
   do imodel = 1, nmodels
-    call progress(i,1,nmodels)
+    call progress(imodel,1,nmodels)
    
     ! Read coordinates of atoms that belong to constraints in this model
 
@@ -174,18 +189,19 @@ program evalconstraints
     do
       read(10,"(a200)",iostat=ioerr) record
       if ( ioerr /= 0 ) exit
-      if ( record(1:4) == "ATOM" .and. record(13:16) == "CA" ) then
+      if ( record(1:4) == "ATOM" .and. trim(adjustl(record(13:16))) == "CA" ) then
         read(record(23:26),*,iostat=ioerr) ires
+        if ( ires > nres ) exit
         if ( ioerr /= 0 ) then
           write(*,*) ' ERROR: Could not read residue number in file: ',&
                      trim(adjustl(model(imodel)%file))
           write(*,*) '  Line: ', trim(adjustl(record))
           stop
         end if
+        read(record(31:38),*) x(ires,1)
+        read(record(39:46),*) x(ires,2)
+        read(record(47:54),*) x(ires,3)
       end if
-      read(record(31:38),*) x(ires,1)
-      read(record(39:46),*) x(ires,2)
-      read(record(47:54),*) x(ires,3)
     end do
     close(10)
 
@@ -196,20 +212,22 @@ program evalconstraints
       i = constraint(iconst)%i
       j = constraint(iconst)%j
       d = constraint(iconst)%d
-      dij = ( x(i,1) - x(j,1) )**2 + &
-            ( x(i,2) - x(j,2) )**2 + &
-            ( x(i,3) - x(j,3) )**2
+      dij = sqrt( ( x(i,1) - x(j,1) )**2 + &
+                  ( x(i,2) - x(j,2) )**2 + &
+                  ( x(i,3) - x(j,3) )**2 )
       if ( dij <= d ) then
-        model(imodel)%constraint(iconst) = .true.
+        cmodel(imodel,iconst) = .true.
         model(imodel)%ncontacts = model(imodel)%ncontacts + 1
       else
-        model(imodel)%constraint(iconst) = .false.
+        cmodel(imodel,iconst) = .false.
       end if
     end do
+
   end do
 
   ! Computing constraint correlation matrix
 
+  write(*,"(a)") "# Computing constraint correlation matrix ... "
   allocate(correlation(nconstraints,nconstraints))
   do i = 1, nconstraints
     correlation(i,j) = 1.
@@ -219,13 +237,14 @@ program evalconstraints
       correlation(i,j) = 0.
     end do
   end do
-  do imodel = 1, nmodels - 1
+  do imodel = 1, nmodels
+    call progress(imodel,1,nmodels)
     do i = 1, nconstraints - 1
       do j = i + 1, nconstraints
-        if ( model(imodel)%constraint(i) .and. model(imodel)%constraint(j) ) then
+        if ( cmodel(imodel,i) .and. cmodel(imodel,j) ) then
           correlation(i,j) = correlation(i,j) + 1
-        else if( ( model(imodel)%constraint(i) .and. .not. model(imodel)%constraint(j) ) .or. &
-                 ( .not. model(imodel)%constraint(i) .and. model(imodel)%constraint(j) ) ) then
+        else if( ( cmodel(imodel,i) .and. .not. cmodel(imodel,j) ) .or. &
+                 ( .not. cmodel(imodel,i) .and. cmodel(imodel,j) ) ) then
           correlation(i,j) = correlation(i,j) - 1
         end if
       end do
@@ -257,17 +276,34 @@ program evalconstraints
   end if
   write(format,"(a,i8,a)") "(",nconstraints,"(tr1,f5.2) )"
   do i = 1, nconstraints
+    call progress(i,1,nconstraints)
     write(10,format) (correlation(i,j),j=1,nconstraints)
   end do
   close(10)
 
-  ! Write file containing list of of models with constraint analysis  
+  ! Sort models by gscore
 
-  ! Ordering models by G-score
+  write(*,"(a)") "# Sorting models by G-score ... "
+  allocate(ic(nmodels))
+  do imodel = 1, nmodels
+    ic(imodel) = imodel
+  end do
+  do imodel = 1, nmodels-1
+    call progress(imodel,1,nmodels-1)
+    j = imodel + 1
+    do while( model(j-1)%gscore < model(j)%gscore )
+      modeltemp = model(j-1)
+      model(j-1) = model(j)
+      model(j) = modeltemp
+      i = ic(j-1)
+      ic(j-1) = ic(j)
+      ic(j) = i
+      j = j - 1
+      if ( j == 1 ) exit
+    end do
+  end do
 
-  call sort_by_gscore(model,nmodels)
-
-  write(*,*) ' Writing constraint analysis file : ', trim(adjustl(output))
+  write(*,"(a,a)") '# Writting constraint analysis file : ', trim(adjustl(output))
   open(10,file=output,iostat=ioerr)
   if ( ioerr /= 0 ) then 
     write(*,*) ' ERROR: Could not open output file: ', trim(adjustl(output))
@@ -294,17 +330,29 @@ program evalconstraints
   write(10,"(a)") "# Ntot: Total number of constraints satisfied by the ensemble up to this model."
   write(10,"(a)") "# Next: constraint indexes according to list above."
   write(10,"(a)") "#"
-  write(record,*) "(a,",nconstraints,"(tr1,i3))"
-  write(10,record) "#             Model  Nmodel     RelatP       DeltaG  Ntot",(i,i=1,nconstraints)
-  write(format,*) "(i8,tr1,a,tr1,i5,2(tr1,f12.5),tr1,i5,",nconstraints,"(tr1,i3))"
+
+  ! Title of list format
+
+  write(name,*) max_name_size + 9 - 6
+  write(format,*) "(a,t",trim(adjustl(name)),",a,",nconstraints,"(tr1,i3))"
+  write(10,format) "#","Model  Nmodel     RelatP       DeltaG  Ntot",(i,i=1,nconstraints)
+
+  ! Content of list format
+
+  write(name,*) max_name_size + 9
+  write(format,*) "(i8,tr1,a,t",trim(adjustl(name)),",i5,2(tr1,f12.5),tr1,i5,",nconstraints,"(tr1,i3))"
+
+  ! Compute number of constraints satisfied and print
+
   nsatisfied = 0
   allocate(satisfied(nconstraints))
   do i = 1, nconstraints
     satisfied(i) = 0
   end do
   do imodel = 1, nmodels
+    call progress(imodel,1,nmodels)
     do i = 1, nconstraints
-      if ( model(imodel)%constraint(i) ) then
+      if ( cmodel(ic(imodel),i) ) then
         if ( satisfied(i) == 0 ) then
           nsatisfied = nsatisfied + 1
           satisfied(i) = 1
