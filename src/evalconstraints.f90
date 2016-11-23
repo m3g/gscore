@@ -230,7 +230,7 @@ program evalconstraints
   write(*,"(a)") "# Computing constraint correlation matrix ... "
   allocate(correlation(nconstraints,nconstraints))
   do i = 1, nconstraints
-    correlation(i,j) = 1.
+    correlation(i,i) = 1.
   end do
   do i = 1, nconstraints - 1
     do j = i + 1,  nconstraints
