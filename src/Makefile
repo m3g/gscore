@@ -26,7 +26,8 @@ BINARIES = $(BIN)/compactlog \
            $(BIN)/xgcorrelation \
            $(BIN)/xcompare \
            $(BIN)/dgscore \
-           $(BIN)/evalconstraints
+           $(BIN)/evalconstraints \
+           $(BIN)/checkconstraints
 
 MODULES = types.o \
           compactlog_data.o \
@@ -183,6 +184,19 @@ $(BIN)/evalconstraints : Makefile $(MODULES) evalconstraints.o \
                     progress_bar.o \
                     $(FLAGS)
 
+$(BIN)/checkconstraints : Makefile $(MODULES) checkconstraints.o \
+                                    model_index.o \
+                                    sort.o \
+                                    title.o \
+                                    progress_bar.o
+	$(FORTRAN) -o $(BIN)/checkconstraints $(MODULES) \
+                    checkconstraints.o \
+                    model_index.o \
+                    sort.o \
+                    title.o \
+                    progress_bar.o \
+                    $(FLAGS)
+
 #
 # Main program objects
 #
@@ -216,6 +230,9 @@ dgscore.o : Makefile dgscore.f90
 
 evalconstraints.o : Makefile evalconstraints.f90 
 	$(FORTRAN) -c evalconstraints.f90 $(FLAGS)
+
+checkconstraints.o : Makefile checkconstraints.f90 
+	$(FORTRAN) -c checkconstraints.f90 $(FLAGS)
 
 #
 # Subroutine and function objects
