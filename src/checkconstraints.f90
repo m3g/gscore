@@ -56,6 +56,7 @@ program evalconstraints
   call getarg(1,record)
   model%file = record
   call getarg(2,constraintsfile)
+  write(*,"(a,a)") "# Model file: ", trim(adjustl(remove_path(model%file)))
 
   ! Read number of constraints from contraint file
 
