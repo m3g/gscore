@@ -39,12 +39,13 @@ program evalconstraints
   ! Read list of log files from the command line
 
   nargs = iargc()
-  if ( nargs /= 2 ) then
+  if ( nargs /= 2 .and. nargs /= 3 ) then
     write(*,*)
-    write(*,*) ' Run with: checkconstraints model.pdb constraints.dat'
+    write(*,*) ' Run with: checkconstraints model.pdb constraints.dat [dcut]'
     write(*,*)
     write(*,*) ' Where: model.pdb is the PDB file of the model.'
     write(*,*) '        constraints.dat is the file containing the set of constraints. '
+    write(*,*) '        [dcut] is an optional constraint distance, (overwrites that of file). '
     write(*,*)
     write(*,*) ' More details at: http://leandro.iqm.unicamp/gscore '
     write(*,*)
@@ -57,6 +58,10 @@ program evalconstraints
   model%file = record
   call getarg(2,constraintsfile)
   write(*,"(a,a)") "# Model file: ", trim(adjustl(remove_path(model%file)))
+  if ( nargs == 3 ) then
+    call getarg(3,record)
+    read(record,*) dij
+  end if
 
   ! Read number of constraints from contraint file
 
@@ -88,7 +93,11 @@ program evalconstraints
     iconst = iconst + 1
     constraint(iconst)%i = i
     constraint(iconst)%j = j
-    constraint(iconst)%d = d
+    if ( nargs == 2 ) then
+      constraint(iconst)%d = d
+    else
+      constraint(iconst)%d = dij
+    end if
     nres = max(nres,i)
     nres = max(nres,j)
   end do
