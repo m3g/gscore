@@ -118,7 +118,6 @@ program gscore
 
   ! For alignment scores or contact score without model-dependent norm
 
-  write(*,"(a)") "# Computing the G-scores ... "
   if ( score_type == 1 .or. &
        score_type == 2 .or. &
        ( score_type == 3 .and. normtype /= "ncontacts" ) ) then
