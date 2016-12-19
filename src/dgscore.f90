@@ -14,7 +14,7 @@ program dgscore
   use types
   use file_operations
   integer :: narg, ioerr, nmodels, imodel
-  double precision :: gscore
+  double precision :: gscore,degree
   character(len=200) file1, file2, output, record, name
   logical :: stop = .true.
   type(model_type), allocatable :: model(:)
@@ -52,7 +52,7 @@ program dgscore
     read(10,"(a200)",iostat=ioerr) record
     if ( ioerr /= 0 ) exit
     if ( comment(record) ) cycle
-    read(record,*,iostat=ioerr) gscore, name
+    read(record,*,iostat=ioerr) gscore, degree, name
     if ( ioerr /= 0 ) then
       write(*,*) ' ERROR: Could not read model data from file: ', trim(adjustl(file1))
       write(*,*) '        at line: ', trim(adjustl(record))
@@ -71,7 +71,7 @@ program dgscore
     read(10,"(a200)",iostat=ioerr) record
     if ( ioerr /= 0 ) exit
     if ( comment(record) ) cycle
-    read(record,*,iostat=ioerr) gscore, name
+    read(record,*,iostat=ioerr) gscore, degree, name
     imodel = imodel + 1
     model(imodel)%name = name
     model(imodel)%gscore = gscore
@@ -88,7 +88,7 @@ program dgscore
     read(20,"(a200)",iostat=ioerr) record
     if ( ioerr /= 0 ) exit
     if ( comment(record) ) cycle
-    read(record,*,iostat=ioerr) gscore, name
+    read(record,*,iostat=ioerr) gscore, degree, name
     if ( ioerr /= 0 ) cycle
     imodel = model_index(name,model,nmodels,stop)
     model(imodel)%dgscore = model(imodel)%gscore - gscore

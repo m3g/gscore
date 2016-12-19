@@ -27,7 +27,7 @@ program evalconstraints
   integer :: i, j, iconst, imodel, ires, model_index, nsatisfied, nconstraints, nres
   integer :: nargs, nmodels, ioerr, max_name_size
   real :: dij, d
-  double precision :: gscore
+  double precision :: gscore, degree
   character(len=200) :: record, name, output, gscorefile, pdblist, constraintsfile, &
                         correlationout, format
   logical :: stop = .true.
@@ -51,7 +51,7 @@ program evalconstraints
   nargs = iargc()
   if ( nargs /= 4 ) then
     write(*,*)
-    write(*,*) ' Run with: evalconstraints pdblist.txt gscore.dat constraints.dat output.dat'
+    write(*,*) ' Run with: evalconstraints pdblist.txt gscores.dat constraints.dat output.dat'
     write(*,*)
     write(*,*) ' Where: pdblist.txt is the file containing the list of PDB models to consider'
     write(*,*) '        gscores.dat it file containing the scores of each structure. '
@@ -129,7 +129,7 @@ program evalconstraints
     read(10,"(a200)",iostat=ioerr) record
     if ( ioerr /= 0 ) exit
     if ( comment(record) ) cycle
-    read(record,*,iostat=ioerr) gscore, name
+    read(record,*,iostat=ioerr) gscore, degree, name
     imodel = model_index(name,model,nmodels,stop)
     model(imodel)%gscore = gscore
   end do

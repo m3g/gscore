@@ -101,9 +101,11 @@ program xgscore
   end if
   write(10,"(a,f12.5)") "# Score cutoff: ", scorecut
   write(10,"(a)") "#"
-  write(10,"(a)") "#    G-score  Model"
+  write(10,"(a)") "# G-score is -RTln(P) for RT=0.593 kcal/mol (T=298.15)"
+  write(10,"(a)") "#"
+  write(10,"(a)") "#    G-score     Degree(P)  Model"
   do i = 1, nmodels2
-    write(10,"(f12.5,tr2,a)") model2(i)%gscore, trim(adjustl(model2(i)%name))
+    write(10,"(2(f12.5,tr2),a)") -0.593d0*dlog(model2(i)%gscore+1.d-30), model2(i)%gscore, trim(adjustl(model2(i)%name))
   end do
   close(10)
 
@@ -113,7 +115,4 @@ program xgscore
   write(*,"(a)") "# Finished. " 
 
 end program xgscore
-
-
-
 

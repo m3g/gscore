@@ -21,7 +21,7 @@ program xgcorrelation
   implicit none
   integer :: i, i1, imodel
   integer :: narg, ioerr, nmodels, model_index, score_type, ialign_score
-  double precision :: gscore, align_score(7)
+  double precision :: gscore, align_score(7), degree
   character(len=10) :: charscore
   character(len=200) :: alignlog, gscorefile, record, name
   character(len=200) :: output, file1, file2, pdblist
@@ -136,7 +136,7 @@ program xgcorrelation
     end if
     if ( comment(record) ) cycle
     i = i + 1
-    read(record,*,iostat=ioerr) gscore, name
+    read(record,*,iostat=ioerr) gscore, degree, name
     if ( ioerr /= 0 ) then
       write(*,*) ' ERROR: Could not read gscore and model name from line: '
       write(*,*) '       ', trim(adjustl(record))
