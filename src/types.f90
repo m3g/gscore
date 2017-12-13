@@ -8,6 +8,8 @@ module types
     double precision :: gscore
     double precision :: similarity
     double precision :: dgscore
+    double precision :: degree
+    double precision :: wdegree
   end type model_type
 
 end module types 

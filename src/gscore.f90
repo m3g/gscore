@@ -89,6 +89,8 @@ program gscore
   write(*,"(a)") "# Computing the G-scores ... "
   do i = 1, nmodels
     model(i)%gscore = 0.d0
+    model(i)%degree = 0.d0
+    model(i)%wdegree = 0.d0
   end do
 
   ! If the score is a contact score and normalization is maxcontact or ijmax, normalize
@@ -125,8 +127,8 @@ program gscore
       call progress(i,1,nmodels)
       do j = i+1, nmodels
         if ( scores(i,j) >= cutoff ) then
-          model(i)%gscore = model(i)%gscore + 1.d0
-          model(j)%gscore = model(j)%gscore + 1.d0
+          model(i)%degree = model(i)%degree + 1.d0
+          model(j)%degree = model(i)%degree + 1.d0
         end if
       end do
     end do
@@ -142,11 +144,11 @@ program gscore
       do j = i + 1, nmodels
         pcontact = scores(i,j) / model(i)%ncontacts
         if ( pcontact >= cutoff ) then
-          model(i)%gscore = model(i)%gscore + 1.d0
+          model(i)%degree = model(i)%degree + 1.d0
         end if
         pcontact = scores(i,j) / model(j)%ncontacts
         if ( pcontact >= cutoff ) then
-          model(j)%gscore = model(j)%gscore + 1.d0
+          model(j)%degree = model(j)%degree + 1.d0
         end if
       end do
     end do
@@ -154,7 +156,8 @@ program gscore
   end if
 
   do i = 1, nmodels
-    model(i)%gscore = model(i)%gscore / dble(nmodels-1)
+    model(i)%degree = model(i)%degree / dble(nmodels-1)
+    model(i)%gscore = -0.593d0*dlog(model(i)%degree+1.d-30)
   end do
 
   ! Order models from greater to lower G-scores
@@ -187,7 +190,7 @@ program gscore
   write(10,"(a)") "#"
   write(10,"(a)") "#    G-score     Degree(P)  Model"
   do i = 1, nmodels
-    write(10,"(2(f12.5,tr2),a)") -0.593d0*dlog(model(i)%gscore+1.d-30), model(i)%gscore, trim(adjustl(model(i)%name))
+    write(10,"(2(f12.5,tr2),a)") model(i)%gscore, model(i)%degree, trim(adjustl(model(i)%name))
   end do
   close(10)
 
