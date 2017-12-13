@@ -21,6 +21,7 @@ program gscore
   integer :: narg, ioerr
   double precision :: cutoff, pcontact
   character(len=200) :: record, output, normtype
+  double precision :: pi = 3.141592d0
 
   write(*,"(a)") "#" 
   write(*,"(a)") "# G-score calculator " 
@@ -143,8 +144,8 @@ program gscore
     do i = 1, nmodels-1
       call progress(i,1,nmodels)
       do j = i + 1, nmodels
-        model(i)%wdegree = model(i)%wdegree + exp((1.d0-1.d0/scores(i,j)))
-        model(j)%wdegree = model(j)%wdegree + exp((1.d0-1.d0/scores(i,j)))
+        model(i)%wdegree = model(i)%wdegree + dtan(((pi/2.d0)*scores(i,j)))
+        model(j)%wdegree = model(j)%wdegree + dtan(((pi/2.d0)*scores(i,j)))
         pcontact = scores(i,j) / model(i)%ncontacts
         if ( pcontact >= cutoff ) then
           model(i)%degree = model(i)%degree + 1.d0
