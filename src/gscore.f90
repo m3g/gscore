@@ -143,8 +143,9 @@ program gscore
     do i = 1, nmodels-1
       call progress(i,1,nmodels)
       do j = i + 1, nmodels
+        model(i)%wdegree = model(i)%wdegree + exp((1.d0-1.d0/scores(i,j)))
+        model(j)%wdegree = model(j)%wdegree + exp((1.d0-1.d0/scores(i,j)))
         pcontact = scores(i,j) / model(i)%ncontacts
-        model(i)%wdegree = model(i)%wdegree + 1.d0*scores(i,j)
         if ( pcontact >= cutoff ) then
           model(i)%degree = model(i)%degree + 1.d0
         end if
@@ -190,7 +191,7 @@ program gscore
   write(10,"(a)") "#"
   write(10,"(a)") "# G-score is -RTln(P) for RT=0.593 kcal/mol (T=298.15)"
   write(10,"(a)") "#"
-  write(10,"(a)") "#    G-score     Degree(P)     WDegree(P) Model"
+  write(10,"(a)") "#    G-score     Degree(P)    WDegree(P) Model"
   do i = 1, nmodels
     write(10,"(3(f12.5,tr2),a)") model(i)%gscore, model(i)%degree, model(i)%wdegree, trim(adjustl(model(i)%name))
   end do
