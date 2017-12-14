@@ -21,7 +21,7 @@ program xgcorrelation
   implicit none
   integer :: i, i1, imodel
   integer :: narg, ioerr, nmodels, model_index, score_type, ialign_score
-  double precision :: gscore, align_score(7), degree
+  double precision :: gscore, align_score(7), degree, wdegree
   character(len=10) :: charscore
   character(len=200) :: alignlog, gscorefile, record, name
   character(len=200) :: output, file1, file2, pdblist
@@ -136,7 +136,7 @@ program xgcorrelation
     end if
     if ( comment(record) ) cycle
     i = i + 1
-    read(record,*,iostat=ioerr) gscore, degree, name
+    read(record,*,iostat=ioerr) gscore, degree, wdegree, name
     if ( ioerr /= 0 ) then
       write(*,*) ' ERROR: Could not read gscore and model name from line: '
       write(*,*) '       ', trim(adjustl(record))
@@ -144,6 +144,8 @@ program xgcorrelation
     end if
     imodel = model_index(name,model,nmodels,stop)
     model(imodel)%gscore = gscore
+    model(imodel)%degree = degree
+    model(imodel)%wdegree = wdegree
   end do
   close(10)
 
@@ -186,7 +188,7 @@ program xgcorrelation
   close(10)
 
   !
-  ! Sort models from greater to lower GDT
+  ! Sort models from greater to lower similarity (GDT, RMSD or TM-score)
   !
 
   ! If RMSD, invert values to sort
@@ -221,10 +223,13 @@ program xgcorrelation
     write(10,"(a)") "# Similarity score: GDT_TS"
   end if
   write(10,"(a)") "#"
-  write(10,"(a)") "#    G-score    Similarity  Model"
+  write(10,"(a)") "# Similarity       G-score        Degree       WDegree  Model"
   do i = 1, nmodels
-    write(10,"(f12.5,tr2,f12.5,tr2,a)") model(i)%gscore, model(i)%similarity, &
-                                        trim(adjustl(model(i)%name))
+    write(10,"(4(f12.5,tr2),a)") model(i)%similarity, &
+                                 model(i)%gscore, &
+                                 model(i)%degree, &
+                                 model(i)%wdegree, &
+                                 trim(adjustl(model(i)%name))
   end do
   close(10)
   write(*,"(a)") "#"

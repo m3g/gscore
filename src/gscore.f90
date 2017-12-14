@@ -21,7 +21,7 @@ program gscore
   integer :: narg, ioerr
   double precision :: cutoff, pcontact
   character(len=200) :: record, output, normtype
-  double precision :: pi = 3.141592d0
+  double precision :: sumwdegree
 
   write(*,"(a)") "#" 
   write(*,"(a)") "# G-score calculator " 
@@ -127,7 +127,8 @@ program gscore
     do i = 1, nmodels-1
       call progress(i,1,nmodels)
       do j = i+1, nmodels
-        model(i)%wdegree = model(i)%wdegree + 1.d0*scores(i,j)
+        model(i)%wdegree = model(i)%wdegree + sumwdegree(scores(i,j))
+        model(j)%wdegree = model(j)%wdegree + sumwdegree(scores(i,j)) 
         if ( scores(i,j) >= cutoff ) then
           model(i)%degree = model(i)%degree + 1.d0
           model(j)%degree = model(i)%degree + 1.d0
@@ -144,10 +145,8 @@ program gscore
     do i = 1, nmodels-1
       call progress(i,1,nmodels)
       do j = i + 1, nmodels
-        !model(i)%wdegree = model(i)%wdegree + dtan(((pi/2.d0)*scores(i,j)))
-        !model(j)%wdegree = model(j)%wdegree + dtan(((pi/2.d0)*scores(i,j)))
-        model(i)%wdegree = model(i)%wdegree - dlog(scores(i,j))
-        model(j)%wdegree = model(j)%wdegree - dlog(scores(i,j)) 
+        model(i)%wdegree = model(i)%wdegree + sumwdegree(scores(i,j))
+        model(j)%wdegree = model(j)%wdegree + sumwdegree(scores(i,j)) 
         pcontact = scores(i,j) / model(i)%ncontacts
         if ( pcontact >= cutoff ) then
           model(i)%degree = model(i)%degree + 1.d0
@@ -164,6 +163,7 @@ program gscore
   do i = 1, nmodels
     model(i)%degree = model(i)%degree / dble(nmodels-1)
     model(i)%gscore = -0.593d0*dlog(model(i)%degree+1.d-30)
+    model(i)%wdegree = model(i)%wdegree / dble(nmodels-1)
   end do
 
   ! Order models from greater to lower G-scores
@@ -194,7 +194,7 @@ program gscore
   write(10,"(a)") "#"
   write(10,"(a)") "# G-score is -RTln(P) for RT=0.593 kcal/mol (T=298.15)"
   write(10,"(a)") "#"
-  write(10,"(a)") "#    G-score     Degree(P)    WDegree(P) Model"
+  write(10,"(a)") "#    G-score     Degree(P)       WDegree  Model"
   do i = 1, nmodels
     write(10,"(3(f12.5,tr2),a)") model(i)%gscore, model(i)%degree, model(i)%wdegree, trim(adjustl(model(i)%name))
   end do
@@ -207,6 +207,15 @@ program gscore
 
 end program gscore
 
+function sumwdegree(x)
+
+  double precision :: sumwdegree, x
+
+  sumwdegree = -1.d0*dlog(x)
+  !sumwdegree = x**6
+  !sumwdegree = (1/x-1)*exp(-(1/x-1))
+
+end function sumwdegree
 
 
 
