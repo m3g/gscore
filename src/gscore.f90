@@ -163,7 +163,7 @@ program gscore
   do i = 1, nmodels
     model(i)%degree = model(i)%degree / dble(nmodels-1)
     model(i)%gscore = -0.593d0*dlog(model(i)%degree+1.d-30)
-    model(i)%wdegree = model(i)%wdegree / dble(nmodels-1)
+    model(i)%wdegree = model(i)%wdegree/dble(nmodels-1)
   end do
 
   ! Order models from greater to lower G-scores
@@ -211,9 +211,12 @@ function sumwdegree(x)
 
   double precision :: sumwdegree, x
 
-  sumwdegree = -1.d0*dlog(x)
+  !sumwdegree = -1.d0*dlog(x)
   !sumwdegree = (1/x-1)*exp(-(1/x-1))
-  !sumwdegree = x**8
+  !sumwdegree = x**4
+  sumwdegree = 1.d0 / ( 1.d0/x - 1.d0 ) 
+  !sumwdegree = 1.d0 / ( 1.d0/x - 1.d0 ) * dlog( 1.d0 / ( 1.d0/x - 1.d0 ) ) 
+  !sumwdegree =  1.d0/x - 1.d0  
 
 end function sumwdegree
 
