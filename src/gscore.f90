@@ -212,8 +212,8 @@ function sumwdegree(x)
   double precision :: sumwdegree, x
 
   sumwdegree = -1.d0*dlog(x)
-  !sumwdegree = x**6
   !sumwdegree = (1/x-1)*exp(-(1/x-1))
+  !sumwdegree = x**8
 
 end function sumwdegree
 
