@@ -12,8 +12,9 @@ subroutine computef(n,x,f)
   f = 0.d0
   do i = 1, nbins
     oneovers = 1.d0 / s(i) - 1.d0
-    f = f + (probs(i) - x(1)* ( 1.d0/(1.d0+exp(-x(2)*(s(i)-x(3)))) ) * oneovers * exp(-x(4)*oneovers ))**2
+    f = f + (sprob(i) - x(1)* ( 1.d0/(1.d0+exp(-x(2)*(s(i)-x(3)))) ) * oneovers * exp(-x(4)*oneovers ))**2
   end do
+  f = f / nbins
 
 end subroutine computef
 
@@ -37,7 +38,7 @@ subroutine computeg(n,x,g)
 
     oneovers = 1.d0 / s(i) - 1.d0
 
-    gall = 2.d0*(probs(i) - x(1)* ( 1.d0/(1.d0+exp(-x(2)*(s(i)-x(3)))) ) * oneovers * exp(-x(4)*oneovers ))
+    gall = (1.d0/nbins)*2.d0*(sprob(i) - x(1)* ( 1.d0/(1.d0+exp(-x(2)*(s(i)-x(3)))) ) * oneovers * exp(-x(4)*oneovers ))
 
     g(1) = g(1) - gall * ( 1.d0/(1.d0+exp(-x(2)*(s(i)-x(3)))) ) * oneovers * exp(-x(4)*oneovers )
 

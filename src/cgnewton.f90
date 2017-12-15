@@ -363,6 +363,7 @@ subroutine cgnewton(n, x, f, g, maxcg, ier, eps, frac, ipri, xmax,&
   end do
   call funcgn(n, xn, fn, warn, evalf)
   nef = nef + 1
+  if ( nef > maxnef ) return
 
   if(fn.le.f + 1.d-4*t*pesca) then
     if(t.ge.1.d0.and.negra) delta = dmin1(100.d0*xnor, 3.d0*delta)

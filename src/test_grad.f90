@@ -6,11 +6,11 @@
 ! Institute of Chemistry - State University of Campinas - Brazil
 !
 
-subroutine test_grad(n,x,g,computef,computeg)
+subroutine test_grad(n,x,computef,computeg)
 
   implicit none
   integer ::  n, i, iworst
-  double precision :: x(n), g(n), fx, step, gcomp, gbest, eworst, error, steperror, stepbest
+  double precision :: x(n), g(4), fx, step, gcomp, gbest, eworst, error, steperror, stepbest
   real :: time0, tarray(2), etime
   external :: computef, computeg
 
@@ -19,7 +19,7 @@ subroutine test_grad(n,x,g,computef,computeg)
   write(*,*)
   write(*,*) ' Five first coordinates variables: '
   do i = 1, min(5,n)
-    write(*,"( 3(tr2,f12.5) )" ) x((i-1)*3+1), x((i-1)*3+2), x((i-1)*3+3)
+    write(*,"( 3(tr2,f12.5) )" ) x(i)
   end do
   write(*,*) 
   write(*,*) ' Computing gradient ... ' 
