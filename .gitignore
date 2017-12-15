@@ -1,5 +1,6 @@
 *.o
 *.mod
+*bin/fithist
 *bin/compactlog 
 *bin/dgscore  
 *bin/gcorrelation  
