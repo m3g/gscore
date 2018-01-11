@@ -19,7 +19,7 @@ program gcorrelation
   implicit none
   integer :: i, iref, imodel, normalization
   integer :: narg, ioerr, model_index
-  double precision :: gscore, cutoff, degree
+  double precision :: gscore, cutoff, degree, wdegree
   character(len=200) :: gscorefile, record, output, reference, name, normtype
   logical :: stop = .true.
 
@@ -97,7 +97,7 @@ program gcorrelation
 
     i = i + 1
     call progress(i,1,nmodels)
-    read(record,*,iostat=ioerr) gscore, degree, name
+    read(record,*,iostat=ioerr) gscore, degree, wdegree, name
     if ( ioerr /= 0 ) then
       write(*,*) ' ERROR: Could not read gscore and model name from line: '
       write(*,*) '       ', trim(adjustl(record))
@@ -105,6 +105,8 @@ program gcorrelation
     end if
     imodel = model_index(name,model,nmodels,stop)
     model(imodel)%gscore = gscore
+    model(imodel)%degree = degree
+    model(imodel)%wdegree = wdegree
   end do
   close(10)
 

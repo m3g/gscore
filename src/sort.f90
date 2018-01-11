@@ -83,6 +83,33 @@ subroutine sort_by_similarity(n,model)
 
 end subroutine sort_by_similarity
 
+!
+! Order models from greater to lower wdegree
+!
+
+subroutine sort_by_wdegree(n,model)
+
+  use types
+  implicit none
+  integer :: i, j, n
+  type(model_type) :: model(n), modeltemp
+
+  write(*,"(a)") "# Sorting models by G-score ... "
+  do i = 1, n-1
+    call progress(i,1,n)
+    j = i + 1
+    do while( model(j-1)%wdegree < model(j)%wdegree )
+      modeltemp = model(j-1)
+      model(j-1) = model(j)
+      model(j) = modeltemp
+      j = j - 1
+      if ( j == 1 ) exit
+    end do
+  end do
+  call progress(n,1,n)
+
+end subroutine sort_by_wdegree
+
 
 
 

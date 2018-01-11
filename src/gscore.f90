@@ -164,11 +164,13 @@ program gscore
     model(i)%degree = model(i)%degree / dble(nmodels-1)
     model(i)%gscore = -0.593d0*dlog(model(i)%degree+1.d-30)
     model(i)%wdegree = model(i)%wdegree/dble(nmodels-1)
+!voltar
   end do
 
   ! Order models from greater to lower G-scores
 
-  call sort_by_gscore(nmodels,model)
+  !call sort_by_gscore(nmodels,model)
+  call sort_by_wdegree(nmodels,model)
 
   !
   ! Write output file 
@@ -209,14 +211,35 @@ end program gscore
 
 function sumwdegree(x)
 
+  implicit none
   double precision :: sumwdegree, x
+  double precision :: a0, a1, a2
 
   !sumwdegree = -1.d0*dlog(x)
   !sumwdegree = (1/x-1)*exp(-(1/x-1))
   !sumwdegree = x**4
-  sumwdegree = 1.d0 / ( 1.d0/x - 1.d0 ) 
   !sumwdegree = 1.d0 / ( 1.d0/x - 1.d0 ) * dlog( 1.d0 / ( 1.d0/x - 1.d0 ) ) 
   !sumwdegree =  1.d0/x - 1.d0  
+  !sumwdegree = 6.48 -9.26*x + 32.19*x**2 -47.66*x**3 +33.70*x**4
+  !sumwdegree =  -9.26*x + 32.19*x**2 -47.66*x**3 +33.70*x**4
+
+  !sumwdegree = x / ( 1.d0 - x )
+  !sumwdegree = x
+  sumwdegree = 1.d0/x -1.d0
+  !a0 = 1
+  !a1 = -0.1
+  !a2 = -
+  !sumwdegree = ((1.d0-x)**a0)*(x**a1+x**a2)
+
+  !sumwdegree = 0.1*(1/x-1)+10*(1.d0 - x)
+
+  !sumwdegree = -9.388*x + 39.442*x**2 -71.203*x**3 +48.112*x**4
+
+  !a1=0.2
+  !a2=-4
+  !sumwdegree = x**a1 * ( 1.d0 - x )**a2
+
+  !sumwdegree = x - 1/x + 1.d0
 
 end function sumwdegree
 
