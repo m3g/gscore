@@ -11,11 +11,19 @@
 ! Aug 26, 2016
 ! http://leandro.iqm.unicamp.br
 !
+
+module wparameters
+
+  double precision :: wpars(4)
+
+end module wparameters
+
 program gscore
 
   use types
   use file_operations
   use compactlog_data
+  use wparameters
   implicit none
   integer :: i, j 
   integer :: narg, ioerr
@@ -31,7 +39,7 @@ program gscore
   write(*,"(a)") "#" 
 
   narg = iargc()
-  if ( narg /= 3 .and. narg /= 4 ) then
+  if ( narg < 3 ) then
     write(*,*) ' Run with: ./gscore [compact log] [score cut] [output file] [norm type]'
     write(*,*) '    Where: [compact log] is the output of compactlog or qmatrix '
     write(*,*) '           [score cut] is the similarity cutoff for the score '
@@ -51,6 +59,16 @@ program gscore
   normtype = "maxcontacts"
   if ( narg == 4 ) then
     call getarg(4,normtype)
+  end if
+  if ( narg > 4 ) then
+    call getarg(5,record)
+    read(record,*) wpars(1)
+    call getarg(6,record)
+    read(record,*) wpars(2)
+    call getarg(7,record)
+    read(record,*) wpars(3)
+    call getarg(8,record)
+    read(record,*) wpars(4)
   end if
 
   ! Print the input options
@@ -210,17 +228,21 @@ end program gscore
 
 function sumwdegree(x)
 
+  use wparameters
   implicit none
   double precision :: sumwdegree, x
   double precision :: a0, a1, a2
 
-  sumwdegree = 1.d0/x -1.d0
+  !sumwdegree = wpars(1)*(1/(x**wpars(2))-1.d0) + wpars(3)*(1.d0-x**(wpars(4)))
 
+  !sumwdegree = 1.d0 - 1.d0 / (1.d0+dexp(-1.d0*wpars(1)*(x-wpars(2))))
+  !sumwdegree = 1.d0/x -1.d0
   !sumwdegree = x**4
-
-  !sumwdegree = x
- 
+  !sumwdegree = (1/x - 1) + 8*(1-x**12)
+  !sumwdegree = (1/x - 1)
+  !sumwdegree = 1-x
   !sumwdegree = 1.d0 / ( 1.d0/min(x,0.99d0) - 1.d0 )
+  sumwdegree = x
 
 end function sumwdegree
 
