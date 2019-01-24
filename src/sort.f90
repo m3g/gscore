@@ -44,7 +44,7 @@ subroutine sort_by_gscore(n,model)
   do i = 1, n-1
     call progress(i,1,n)
     j = i + 1
-    do while( model(j-1)%gscore < model(j)%gscore )
+    do while( model(j-1)%gscore > model(j)%gscore )
       modeltemp = model(j-1)
       model(j-1) = model(j)
       model(j) = modeltemp
