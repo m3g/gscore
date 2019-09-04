@@ -161,6 +161,7 @@ program xcompactlog
   ! Sort model names according to string comparisons
   !
 
+  
   call sort_by_name(nmodels1,model1)
   call sort_by_name(nmodels2,model2)
 
@@ -214,9 +215,9 @@ program xcompactlog
         stop
       end if
       file1 = basename(file1)
-      i1 = model_index(file1,model1,nmodels1,stop)
+      i1 = model_index(file1,model1,nmodels1,stop,.true.)
       file2 = basename(file2)
-      i2 = model_index(file2,model2,nmodels2,stop)
+      i2 = model_index(file2,model2,nmodels2,stop,.true.)
       tmscore(i1,i2) = tmscore_read
       gdt(i1,i2) = gdt_read
     end do

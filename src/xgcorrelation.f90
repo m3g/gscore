@@ -142,7 +142,7 @@ program xgcorrelation
       write(*,*) '       ', trim(adjustl(record))
       stop
     end if
-    imodel = model_index(name,model,nmodels,stop)
+    imodel = model_index(name,model,nmodels,stop,.true.)
     model(imodel)%gscore = gscore
     model(imodel)%degree = degree
     model(imodel)%wdegree = wdegree
@@ -170,7 +170,7 @@ program xgcorrelation
       stop
     end if
     file1 = basename(file1)
-    i1 = model_index(file1,model,nmodels,stop)
+    i1 = model_index(file1,model,nmodels,stop,.true.)
     if ( ialign_score == 0 ) then
       if ( score_type == 1 ) then 
         model(i1)%similarity = align_score(6) ! GDT_TS

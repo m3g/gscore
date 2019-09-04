@@ -154,7 +154,7 @@ program xcompare
   open(10,file=output)
   do imodel = 1, nmodels(1)
     stop = .false.
-    jmodel = model_index(model1(imodel)%name,model2,nmodels(2),stop)
+    jmodel = model_index(model1(imodel)%name,model2,nmodels(2),stop,.true.)
     if ( stop ) cycle
     write(10,*) model1(imodel)%gscore, model2(jmodel)%gscore, trim(adjustl(model1(imodel)%name)) 
   end do

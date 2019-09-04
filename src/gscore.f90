@@ -181,7 +181,21 @@ program gscore
   do i = 1, nmodels
     model(i)%degree = model(i)%degree / dble(nmodels-1)
     model(i)%gscore = -0.593d0*dlog(model(i)%degree+1.d-30)
-    model(i)%wdegree = model(i)%wdegree/dble(nmodels-1)
+    !model(i)%wdegree = model(i)%wdegree/dble(nmodels-1)
+
+    !voltar
+
+    !model(i)%wdegree = 1.d0*(-0.3d0*model(i)%wdegree/dble(nmodels-1))
+    !model(i)%wdegree = -1.d0*(0.5*((model(i)%wdegree)**2)/(dble(nmodels-1)**2))
+
+    ! Luciano Gaussiana:
+    model(i)%wdegree = -0.3d0*model(i)%wdegree/dble(nmodels-1) + 0.5*((model(i)%wdegree)**2)/(dble(nmodels-1)**2)
+
+    ! Luciano Weibull: 
+    !model(i)%wdegree = wpars(1)*dlog(0.3d0) + dlog(dble(nmodels-1)) - 1.d0 + &
+    !                   model(i)%wdegree/(dble(nmodels-1)*(0.3**wpars(1))) - dlog(model(i)%wdegree)
+    !model(i)%wdegree = -1.d0*model(i)%wdegree
+
   end do
 
   ! Order models from greater to lower G-scores
@@ -242,6 +256,11 @@ function sumwdegree(x)
   !sumwdegree = (1/x - 1)
   !sumwdegree = 1-x
   !sumwdegree = 1.d0 / ( 1.d0/min(x,0.99d0) - 1.d0 )
+
+  ! p/ Luciano Weibull
+  !sumwdegree = x**wpars(1)
+  
+  ! p/ Luciano Gaussiana
   sumwdegree = x
 
 end function sumwdegree

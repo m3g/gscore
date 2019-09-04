@@ -103,7 +103,7 @@ program gcorrelation
       write(*,*) '       ', trim(adjustl(record))
       stop
     end if
-    imodel = model_index(name,model,nmodels,stop)
+    imodel = model_index(name,model,nmodels,stop,.true.)
     model(imodel)%gscore = gscore
     model(imodel)%degree = degree
     model(imodel)%wdegree = wdegree
@@ -112,7 +112,7 @@ program gcorrelation
 
   ! Checking which is the index of the reference model 
 
-  iref = model_index(reference,model,nmodels,stop)
+  iref = model_index(reference,model,nmodels,stop,.true.)
 
   !
   ! Now check the similarity of each model to the reference model

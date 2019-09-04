@@ -26,6 +26,7 @@ program compactlog
   character(len=200) :: pdb_list, align_list, align_log, output, gdt_log, tm_log
   character(len=200) :: record, file1, file2, format
   logical :: stop = .true.
+  logical :: sort
   type(model_type), allocatable :: model(:)
 
   write(*,"(a)") "#" 
@@ -42,7 +43,7 @@ program compactlog
   write(*,"(a)") "#" 
 
   narg = iargc()
-  if ( narg /= 3 ) then
+  if ( narg < 3 ) then
     write(*,*) ' ERROR: Run with: ./compactlog [pdb list] [align list] [output] '
     stop
   end if
@@ -62,6 +63,20 @@ program compactlog
   tm_log = trim(adjustl(remove_extension(basename(output))))//"-TMscore."//trim(adjustl(file_extension(output)))
   call checkfile(gdt_log)
   call checkfile(tm_log)
+
+  ! Order or not
+
+  sort = .true.
+  if( narg == 4 ) then
+    call getarg(4,record)
+    if ( record == "sort" ) then
+      sort = .true.
+    else if ( record == "nosort" ) then
+      sort = .false.
+    else
+      write(*,*) " Fourth argument must be 'sort' or 'nosort' "
+    end if
+  end if
 
   ! Print the input options
 
@@ -112,7 +127,9 @@ program compactlog
   ! Sort model names according to string comparisons
   !
 
-  call sort_by_name(nmodels,model)
+  if ( sort ) then
+    call sort_by_name(nmodels,model)
+  end if
 
   ! Count the number of lovoalign log files
 
@@ -160,9 +177,9 @@ program compactlog
         stop
       end if
       file1 = basename(file1)
-      i1 = model_index(file1,model,nmodels,stop)
+      i1 = model_index(file1,model,nmodels,stop,sort)
       file2 = basename(file2)
-      i2 = model_index(file2,model,nmodels,stop)
+      i2 = model_index(file2,model,nmodels,stop,sort)
       if ( i2 > i1 ) then
         tmscore(i1,i2) = tmscore_read
         gdt(i1,i2) = gdt_read
