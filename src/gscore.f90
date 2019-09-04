@@ -200,8 +200,8 @@ program gscore
 
   ! Order models from greater to lower G-scores
 
-  !call sort_by_gscore(nmodels,model)
-  call sort_by_wdegree(nmodels,model)
+  call sort_by_gscore(nmodels,model)
+  !call sort_by_wdegree(nmodels,model)
 
   !
   ! Write output file 

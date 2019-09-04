@@ -48,7 +48,7 @@ proc parse_line { line char } {
 # Obs: Ignore the wait_for.tcl processes.
 
 proc check_proc { user process n_processes } {
-  catch { exec ps aux } ps  
+  catch { exec ps -eo user:50,cmd } ps  
   if { [ string first "wait_for" $ps ] != -1 } { 
     set ps [ split $ps "\n" ]
     set check_proc 0
