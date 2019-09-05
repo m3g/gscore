@@ -6,7 +6,7 @@ subroutine title()
   implicit none
   write(*,"(&
      &'#',/,&
-     &'# Version 19.024 ',/&
+     &'# Version 19.248 ',/&
      &'#')")
 
 end subroutine title
